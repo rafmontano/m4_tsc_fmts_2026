@@ -1,21 +1,26 @@
-# =====================================================================
+# ==============================================================================
 # run_all.R
-# Minimal sequential runner for all paper scripts.
-# Runs each script one after the other, end-to-end.
 #
-# Assumes:
-#   - You run this from the project root.
-#   - LABEL_ID, FREQ_TAG etc. already match the experiment.
-# =====================================================================
+# Purpose:
+#   Generate the tables and figures used by the current paper.
+# Inputs:
+#   Completed model-evaluation results and the M4 dataset.
+# Outputs:
+#   Paper tables and figures under results/paper.
+# Run from:
+#   Project root.
+# ==============================================================================
 
-source("src/r/paper/01_m4_pivot_period_type.R")
-source("src/r/paper/02_m4_period_bar.R")
-source("src/r/paper/03_m4_length_box_by_period_facet.R")
-source("src/r/paper/04_cd_diagram_models.R")
-source("src/r/paper/04b_table_accuracy_macroF1_by_frequency.R")
-source("src/r/paper/05_pca.R")
-source("src/r/paper/05b_pca_clusters_train.R")
-source("src/r/paper/06a_compute_class_proportion.R")
-source("src/r/paper/06_class_imbalance_bars.R")
+paper_scripts <- c(
+  "src/r/paper/01_m4_pivot_period_type.R",
+  "src/r/paper/04_cd_diagram_models.R",
+  "src/r/paper/05_accuracy_by_horizon_plots.R",
+  "src/r/paper/06b_class_imbalance_bars_binary.R"
+)
 
-cat("\nAll paper scripts executed successfully.\n")
+for (paper_script in paper_scripts) {
+  cat("\nRunning:", paper_script, "\n")
+  source(paper_script)
+}
+
+cat("\nPaper-output scripts executed successfully.\n")

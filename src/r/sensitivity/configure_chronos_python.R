@@ -1,8 +1,14 @@
 # ==============================================================================
 # configure_chronos_python.R
 #
-# Purpose: Select the foundation-model Conda environment for reticulate.
-# Run from: Sourced by the sensitivity pipeline.
+# Purpose:
+#   Select the foundation-model Python environment for reticulate.
+# Inputs:
+#   RETICULATE_PYTHON or the m4_fmts_foundation Conda environment.
+# Outputs:
+#   The configured reticulate Python session.
+# Run from:
+#   Project root; sourced by the sensitivity pipeline.
 # ==============================================================================
 
 configure_chronos_python <- function() {
@@ -30,4 +36,3 @@ configure_chronos_python <- function() {
 
   invisible(reticulate::py_config())
 }
-

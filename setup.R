@@ -1,17 +1,22 @@
 # ==============================================================================
 # setup.R
 #
-# Purpose: Install the project R and Python environments.
+# Purpose: Prepare and validate the project R and Python environments.
+# Inputs:  Environment definitions in environments/ and project source files.
+# Outputs: Project directories, a project-local renv library and lockfile, Conda
+#          environments, and cached foundation-model files.
 # Run from: Repository root with Rscript --vanilla setup.R
 # ==============================================================================
 
-# Step 1. Project folders ------------------------------------------------------
+# Configuration ---------------------------------------------------------------
 
 if (!file.exists("m4-tsc-fmts-2026.Rproj")) {
   stop("Run setup.R from the repository root.")
 }
 
 total_steps <- 5L
+
+# Helper functions ------------------------------------------------------------
 
 start_step <- function(step, label) {
   percent <- (step - 1L) * 100L / total_steps
@@ -29,7 +34,12 @@ complete_step <- function(step, label) {
   ))
 }
 
+# Main execution --------------------------------------------------------------
+
 message("Setup has five steps. Percentages show completed steps, not elapsed time.")
+
+# Step 1: Project folders ------------------------------------------------------
+
 start_step(1L, "Prepare project folders")
 
 project_directories <- c(
@@ -48,8 +58,7 @@ invisible(lapply(
 
 complete_step(1L, "Project folders are ready")
 
-
-# Step 2. R environment -------------------------------------------------------
+# Step 2: R environment -------------------------------------------------------
 
 start_step(2L, "Install and record R packages")
 
@@ -97,7 +106,11 @@ missing_r_packages <- r_packages[
 ]
 
 if (length(missing_r_packages) > 0L) {
-  message("[R] Installing ", length(missing_r_packages), " missing CRAN packages. This can take time...")
+  message(
+    "[R] Installing ",
+    length(missing_r_packages),
+    " missing CRAN packages. This can take time..."
+  )
   renv::install(missing_r_packages, prompt = FALSE)
 } else {
   message("[R] Required CRAN packages are already installed.")
@@ -126,8 +139,11 @@ if (!requireNamespace("M4comp2018", quietly = TRUE)) {
       silent = TRUE
     )
 
-    archive_contents <- if (!inherits(result, "try-error") &&
-      file.exists(m4_tarball) && file.info(m4_tarball)$size > 0L) {
+    archive_contents <- if (
+      !inherits(result, "try-error") &&
+        file.exists(m4_tarball) &&
+        file.info(m4_tarball)$size > 0L
+    ) {
       try(utils::untar(m4_tarball, list = TRUE), silent = TRUE)
     } else {
       character()
@@ -136,8 +152,13 @@ if (!requireNamespace("M4comp2018", quietly = TRUE)) {
     m4_downloaded <- !inherits(archive_contents, "try-error") &&
       any(grepl("(^|/)DESCRIPTION$", archive_contents))
 
-    if (m4_downloaded) break
-    if (attempt < 3L) Sys.sleep(5L)
+    if (m4_downloaded) {
+      break
+    }
+
+    if (attempt < 3L) {
+      Sys.sleep(5L)
+    }
   }
 
   if (!m4_downloaded) {
@@ -158,8 +179,7 @@ renv::snapshot(type = "implicit", prompt = FALSE)
 
 complete_step(2L, "R environment is ready")
 
-
-# Steps 3 and 4. Python environments ------------------------------------------
+# Steps 3 and 4: Python environments ------------------------------------------
 
 foundation_env <- "m4_fmts_foundation"
 classifiers_env <- "m4_fmts_classifiers"
@@ -183,7 +203,15 @@ install_environment <- function(name, definition) {
 
   exists <- name %in% reticulate::conda_list(conda = conda)$name
   action <- if (exists) "update" else "create"
-  message("[Python] Conda environment '", name, "': ", action, " in progress. This can take time...")
+
+  message(
+    "[Python] Conda environment '",
+    name,
+    "': ",
+    action,
+    " in progress. This can take time..."
+  )
+
   arguments <- c(
     "env", action, "--name", name,
     "--file", shQuote(normalizePath(definition, winslash = "/"))
@@ -208,8 +236,7 @@ start_step(4L, "Install the classifier Python environment")
 install_environment(classifiers_env, classifiers_file)
 complete_step(4L, "Classifier Python environment is ready")
 
-
-# Step 5. Installation check --------------------------------------------------
+# Step 5: Installation check --------------------------------------------------
 
 start_step(5L, "Check R, Python, and model access")
 
@@ -224,13 +251,23 @@ check_python <- function(environment, code) {
   }
 }
 
-message("[Check] Testing foundation-model packages and model access. The first run may download model files...")
+message(
+  "[Check] Testing foundation-model packages and model access. ",
+  "The first run may download model files..."
+)
+
 check_python(
   foundation_env,
   paste(
-    "import chronos, joblib, mantis, numpy, pandas, rdata, rpy2, sklearn, sktime, torch",
+    paste(
+      "import chronos, joblib, mantis, numpy, pandas, rdata,",
+      "rpy2, sklearn, sktime, torch"
+    ),
     "from chronos import Chronos2Pipeline",
-    "Chronos2Pipeline.from_pretrained('amazon/chronos-2', device_map='cpu')",
+    paste(
+      "Chronos2Pipeline.from_pretrained(",
+      "'amazon/chronos-2', device_map='cpu')"
+    ),
     "from mantis.architecture import Mantis8M",
     "Mantis8M(device='cpu').from_pretrained('paris-noah/Mantis-8M')",
     sep = "; "
@@ -238,14 +275,24 @@ check_python(
 )
 
 message("[Check] Testing classifier packages...")
+
 check_python(
   classifiers_env,
   paste(
-    "import joblib, numba, numpy, pandas, rdata, rpy2, sklearn, sktime, tensorflow",
-    "from sktime.classification.distance_based import KNeighborsTimeSeriesClassifier",
+    paste(
+      "import joblib, numba, numpy, pandas, rdata, rpy2,",
+      "sklearn, sktime, tensorflow"
+    ),
+    paste(
+      "from sktime.classification.distance_based import",
+      "KNeighborsTimeSeriesClassifier"
+    ),
     "from sktime.classification.sklearn import RotationForest",
     "from sktime.classification.kernel_based import RocketClassifier",
-    "from sktime.classification.deep_learning import InceptionTimeClassifier",
+    paste(
+      "from sktime.classification.deep_learning import",
+      "InceptionTimeClassifier"
+    ),
     "from sktime.classification.hybrid import HIVECOTEV2",
     sep = "; "
   )

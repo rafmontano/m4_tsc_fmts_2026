@@ -1,9 +1,15 @@
-# File: src/python/mantis_models.py
+# ==============================================================================
+# mantis_models.py
+#
 # Purpose:
-#   Mantis feature-extraction pipeline for raw univariate rolling windows.
-#   Contract:
-#     - input: list[np.ndarray] of raw 1D series
-#     - output: embeddings and RandomForest predictions
+#   Extract Mantis representations and train directional classifiers.
+# Inputs:
+#   Univariate time series, labels, model settings, and device selection.
+# Outputs:
+#   Mantis embeddings, fitted Random Forest models, and predictions.
+# Used by:
+#   The Mantis experiment runner.
+# ==============================================================================
 
 from __future__ import annotations
 
@@ -12,15 +18,10 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import torch
 import torch.nn.functional as F
-from sklearn.ensemble import RandomForestClassifier
-
 from mantis.architecture import Mantis8M
 from mantis.trainer import MantisTrainer
+from sklearn.ensemble import RandomForestClassifier
 
-
-# --------------------------------------------------
-# Constants
-# --------------------------------------------------
 
 DEFAULT_MANTIS_CHECKPOINT = "paris-noah/Mantis-8M"
 DEFAULT_RESIZE_TO = 512
@@ -28,47 +29,33 @@ DEFAULT_RF_TREES = 200
 DEFAULT_RANDOM_STATE = 42
 
 
-# --------------------------------------------------
-# Small helpers
-# --------------------------------------------------
-
 def _as_1d_float_array(x: Any) -> np.ndarray:
     return np.asarray(x, dtype=float).reshape(-1)
 
 
 def _stack_univariate_series(X: List[np.ndarray]) -> np.ndarray:
     arrays = [_as_1d_float_array(x) for x in X]
-
     lengths = [len(x) for x in arrays]
+
     if len(set(lengths)) != 1:
         raise ValueError(
             "All input series must have the same length before stacking. "
             f"Observed lengths: {sorted(set(lengths))}"
         )
 
-    X_np = np.stack(arrays, axis=0)          # (n_samples, seq_len)
-    X_np = X_np[:, np.newaxis, :]            # (n_samples, 1, seq_len)
+    X_np = np.stack(arrays, axis=0)
+    X_np = X_np[:, np.newaxis, :]
+
     return X_np.astype(np.float32)
 
 
-#def resize_for_mantis(X: List[np.ndarray], size: int = DEFAULT_RESIZE_TO) -> np.ndarray:
-#    X_np3d = _stack_univariate_series(X)
-#    X_tensor = torch.tensor(X_np3d, dtype=torch.float32)
-#    X_scaled = F.interpolate(
-#        X_tensor,
-#        size=size,
-#        mode="linear",
-#        align_corners=False,
-#    )
-#    return X_scaled.cpu().numpy()
-
-def resize_for_mantis(X: List[np.ndarray], size: int = DEFAULT_RESIZE_TO) -> np.ndarray:
+def resize_for_mantis(
+    X: List[np.ndarray],
+    size: int = DEFAULT_RESIZE_TO,
+) -> np.ndarray:
     arrays = [_as_1d_float_array(x) for x in X]
     lengths = [len(x) for x in arrays]
 
-    # --------------------------------------------------
-    # FAST PATH: all same length (unchanged)
-    # --------------------------------------------------
     if len(set(lengths)) == 1:
         X_np3d = _stack_univariate_series(arrays)
         X_tensor = torch.tensor(X_np3d, dtype=torch.float32)
@@ -82,26 +69,28 @@ def resize_for_mantis(X: List[np.ndarray], size: int = DEFAULT_RESIZE_TO) -> np.
 
         return X_scaled.cpu().numpy().astype(np.float32)
 
-    # --------------------------------------------------
-    # GROUPED PATH: variable lengths (OPTIMISED)
-    # --------------------------------------------------
-    # 1. Group indexes by length
     groups = {}
-    for idx, (x, l) in enumerate(zip(arrays, lengths)):
-        if l not in groups:
-            groups[l] = {"idx": [], "data": []}
-        groups[l]["idx"].append(idx)
-        groups[l]["data"].append(x)
 
-    # 2. Prepare output container
+    for idx, (x, length) in enumerate(zip(arrays, lengths)):
+        if length not in groups:
+            groups[length] = {
+                "idx": [],
+                "data": [],
+            }
+
+        groups[length]["idx"].append(idx)
+        groups[length]["data"].append(x)
+
     X_out = [None] * len(arrays)
 
-    # 3. Process each group in batch
-    for l, g in groups.items():
-        batch = np.stack(g["data"], axis=0)          # (n_group, length)
-        batch = batch[:, np.newaxis, :]              # (n_group, 1, length)
+    for group in groups.values():
+        batch = np.stack(group["data"], axis=0)
+        batch = batch[:, np.newaxis, :]
 
-        batch_tensor = torch.tensor(batch, dtype=torch.float32)
+        batch_tensor = torch.tensor(
+            batch,
+            dtype=torch.float32,
+        )
 
         batch_scaled = F.interpolate(
             batch_tensor,
@@ -110,14 +99,13 @@ def resize_for_mantis(X: List[np.ndarray], size: int = DEFAULT_RESIZE_TO) -> np.
             align_corners=False,
         ).cpu().numpy()
 
-        # 4. Place results back in original order
-        for pos, original_idx in enumerate(g["idx"]):
-            X_out[original_idx] = batch_scaled[pos]
+        for position, original_idx in enumerate(group["idx"]):
+            X_out[original_idx] = batch_scaled[position]
 
-    # 5. Stack final result
     X_ready = np.stack(X_out, axis=0)
 
     return X_ready.astype(np.float32)
+
 
 def get_mantis_device(preferred: str = "cpu") -> str:
     preferred = str(preferred).strip().lower()
@@ -132,10 +120,6 @@ def get_mantis_device(preferred: str = "cpu") -> str:
     return "cpu"
 
 
-# --------------------------------------------------
-# Mantis loading / embedding extraction
-# --------------------------------------------------
-
 def load_mantis_model(
     device: str = "cpu",
     checkpoint: str = DEFAULT_MANTIS_CHECKPOINT,
@@ -143,7 +127,11 @@ def load_mantis_model(
     device_use = get_mantis_device(device)
     network = Mantis8M(device=device_use)
     network = network.from_pretrained(checkpoint)
-    trainer = MantisTrainer(device=device_use, network=network)
+    trainer = MantisTrainer(
+        device=device_use,
+        network=network,
+    )
+
     return trainer
 
 
@@ -152,14 +140,14 @@ def extract_mantis_embeddings(
     trainer,
     resize_to: int = DEFAULT_RESIZE_TO,
 ) -> np.ndarray:
-    X_ready = resize_for_mantis(X, size=resize_to)
+    X_ready = resize_for_mantis(
+        X,
+        size=resize_to,
+    )
     Z = trainer.transform(X_ready)
+
     return np.asarray(Z)
 
-
-# --------------------------------------------------
-# RandomForest on top of embeddings
-# --------------------------------------------------
 
 def build_rf_classifier(
     n_estimators: int = DEFAULT_RF_TREES,
@@ -183,9 +171,16 @@ def fit_mantis_rf(
     random_state: int = DEFAULT_RANDOM_STATE,
     n_jobs: int = -1,
 ) -> Dict[str, Any]:
-    trainer = load_mantis_model(device=device, checkpoint=checkpoint)
+    trainer = load_mantis_model(
+        device=device,
+        checkpoint=checkpoint,
+    )
 
-    Z_train = extract_mantis_embeddings(X_train, trainer=trainer, resize_to=resize_to)
+    Z_train = extract_mantis_embeddings(
+        X_train,
+        trainer=trainer,
+        resize_to=resize_to,
+    )
 
     predictor = build_rf_classifier(
         n_estimators=n_estimators,
@@ -207,6 +202,11 @@ def predict_mantis_rf(
     predictor,
     resize_to: int = DEFAULT_RESIZE_TO,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    Z = extract_mantis_embeddings(X, trainer=trainer, resize_to=resize_to)
+    Z = extract_mantis_embeddings(
+        X,
+        trainer=trainer,
+        resize_to=resize_to,
+    )
     y_pred = predictor.predict(Z)
+
     return y_pred, Z

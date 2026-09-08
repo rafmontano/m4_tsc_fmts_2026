@@ -1,12 +1,23 @@
-# src/python/chronos_forecast.py
+# ==============================================================================
+# chronos_forecast.py
+#
+# Purpose:
+#   Generate a Chronos-2 point forecast for one univariate time series.
+# Inputs:
+#   Observations, forecast horizon, model name, device, and frequency.
+# Outputs:
+#   Point forecast values as a Python list.
+# Called from:
+#   R through src/r/fct/01_fct_methods.R and reticulate.
+# ==============================================================================
+
+import builtins
 
 import numpy as np
 import pandas as pd
 import torch
 from chronos import Chronos2Pipeline
 
-
-import builtins
 
 if not hasattr(builtins, "_CHRONOS2_PIPELINE_CACHE"):
     builtins._CHRONOS2_PIPELINE_CACHE = {}
@@ -93,15 +104,17 @@ def chronos_forecast(
         device_map=device,
     )
 
-    context_df = pd.DataFrame({
-        "id": "series_1",
-        "date": pd.date_range(
-            start="2000-01-01",
-            periods=x.size,
-            freq=freq,
-        ),
-        "target": x,
-    })
+    context_df = pd.DataFrame(
+        {
+            "id": "series_1",
+            "date": pd.date_range(
+                start="2000-01-01",
+                periods=x.size,
+                freq=freq,
+            ),
+            "target": x,
+        }
+    )
 
     forecast_df = pipeline.predict_df(
         context_df,

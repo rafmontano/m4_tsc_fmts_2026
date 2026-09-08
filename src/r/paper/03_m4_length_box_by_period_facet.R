@@ -1,24 +1,27 @@
-# =====================================================================
+# ==============================================================================
 # 03_m4_length_box_by_period_facet.R
-# Faceted boxplots of M4 series length by period, with median labels
-# Output: results/paper/figures/m4_length_box_by_period_facet.pdf
-# =====================================================================
+#
+# Purpose:
+#   Plot M4 series-length distributions by frequency.
+# Inputs:
+#   The M4 dataset from M4comp2018.
+# Outputs:
+#   A faceted PDF figure under results/paper/figures.
+# Run from:
+#   Project root.
+# ==============================================================================
 
 library(M4comp2018)
 library(tidyverse)
 
-# ---------------------------------------------------------------------
-# 1) Output
-# ---------------------------------------------------------------------
-fig_dir  <- file.path("results", "paper", "figures")
+# Output ---------------------------------------------------------------------
+fig_dir <- file.path("results", "paper", "figures")
 
 fig_path <- file.path(fig_dir, "m4_length_box_by_period_facet.pdf")
 
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
-# ---------------------------------------------------------------------
-# 2) Load M4 and metadata
-# ---------------------------------------------------------------------
+# Load M4 and metadata -------------------------------------------------------
 
 data("M4")
 
@@ -34,14 +37,14 @@ m4_meta <- purrr::map_dfr(
   mutate(
     period = factor(
       period,
-      levels = c("Yearly", "Quarterly", "Monthly",
-                 "Weekly", "Daily", "Hourly")
+      levels = c(
+        "Yearly", "Quarterly", "Monthly",
+        "Weekly", "Daily", "Hourly"
+      )
     )
   )
 
-# ---------------------------------------------------------------------
-# 3) Summary for medians
-# ---------------------------------------------------------------------
+# Summary for medians --------------------------------------------------------
 
 length_summary <- m4_meta %>%
   group_by(period) %>%
@@ -53,9 +56,7 @@ length_summary <- m4_meta %>%
 
 print(length_summary)
 
-# ---------------------------------------------------------------------
-# 4) Faceted boxplots + median labels
-# ---------------------------------------------------------------------
+# Faceted boxplots + median labels -------------------------------------------
 
 p <- ggplot(m4_meta, aes(x = length, y = 1)) +
   geom_boxplot(
@@ -65,7 +66,7 @@ p <- ggplot(m4_meta, aes(x = length, y = 1)) +
     outlier.alpha = 0.6
   ) +
   facet_wrap(
-    ~ period,
+    ~period,
     ncol   = 1,
     scales = "free_x"
   ) +
@@ -77,8 +78,8 @@ p <- ggplot(m4_meta, aes(x = length, y = 1)) +
       label = paste0("median = ", median_len)
     ),
     inherit.aes = FALSE,
-    hjust       = 1.1,
-    size        = 3
+    hjust = 1.1,
+    size = 3
   ) +
   labs(
     x = "Series length (number of observations)",
@@ -95,9 +96,7 @@ p <- ggplot(m4_meta, aes(x = length, y = 1)) +
     plot.margin  = margin(t = 5, r = 10, b = 5, l = 60)
   )
 
-# ---------------------------------------------------------------------
-# 5) Save
-# ---------------------------------------------------------------------
+# Save -----------------------------------------------------------------------
 
 ggsave(
   filename = fig_path,
@@ -107,4 +106,3 @@ ggsave(
 )
 
 message("Faceted boxplot of series length by period saved to: ", fig_path)
-

@@ -1,23 +1,22 @@
 # ==============================================================================
-# run_tsc_chronos.py
+# run_tsc_chronos2.py
 #
 # Purpose:
-#   Run the existing sktime-based Chronos forecasting experiments.
+#   Run the Chronos-2 forecasting experiments used in the paper.
 # Inputs:
 #   R pipeline artifacts, split indices, frequencies, and window modes.
 # Outputs:
-#   Consolidated Chronos evaluation RDS files.
+#   Consolidated Chronos-2 evaluation RDS files.
 # Run from:
 #   Project root using the foundation-model Python environment.
 # ==============================================================================
 
-import os
 import warnings
 from typing import Any, Dict, List
 
 import numpy as np
-from sktime.forecasting.base import ForecastingHorizon
 
+from src.python.chronos_forecast import chronos_forecast
 from src.python.eval_reports import (
     build_r_consolidated_eval_object,
     compute_label_vector,
@@ -28,55 +27,32 @@ from src.python.eval_reports import (
     store_r_real_result,
     store_r_test_result,
 )
-from src.python.get_sktime_models import (
-    get_available_model_ids,
-    get_sktime_models,
-)
 from src.python.r_bridge_sktime import (
-    MODELS_DIR,
     PROJECT_ROOT,
     RESULTS_DIR,
     get_chronos_data,
     get_paths,
-    window_tag,
 )
 
-
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-try:
-    from numba.core.errors import NumbaTypeSafetyWarning
-
-    warnings.filterwarnings(
-        "ignore",
-        category=NumbaTypeSafetyWarning,
-    )
-except Exception:
-    pass
-
 
 FREQ_TAGS = ["w", "h", "y", "q", "m", "d"]
-MODEL_ID = ["CHRONOS"]
+MODEL_ID = "CHRONOS"
+MODEL_NAME = "amazon/chronos-2"
 # WINDOW_MODES = ["small", "default", "large", "full"]
 WINDOW_MODES = ["default"]
 
-
-def detect_device() -> str:
-    import torch
-
-    if torch.cuda.is_available():
-        return "cuda"
-
-    if (
-        hasattr(torch.backends, "mps")
-        and torch.backends.mps.is_available()
-    ):
-        return "mps"
-
-    return "cpu"
+FREQUENCY_BY_TAG = {
+    "y": "D",
+    "q": "QS",
+    "m": "MS",
+    "w": "D",
+    "d": "D",
+    "h": "h",
+}
 
 
 def _safe_len(x: Any) -> int:
@@ -99,20 +75,15 @@ def _get_n_horizons_from_dataset(
         return int(len(y_real[0]))
 
     raise ValueError(
-        "Cannot infer horizon length from empty Chronos dataset."
+        "Cannot infer horizon length from empty Chronos-2 dataset."
     )
 
 
-def _forecast_chronos_labels(
+def _forecast_chronos2_labels(
     series_list: List[np.ndarray],
-    model,
     n_horizons: int,
+    freq: str,
 ) -> np.ndarray:
-    fh = ForecastingHorizon(
-        np.arange(1, n_horizons + 1),
-        is_relative=True,
-    )
-
     all_labels = []
 
     for index, x_hist in enumerate(series_list):
@@ -122,49 +93,30 @@ def _forecast_chronos_labels(
         ).reshape(-1)
 
         if x_hist.size == 0:
-            all_labels.append(
-                np.zeros(
-                    n_horizons,
-                    dtype=np.int32,
-                )
+            raise ValueError(
+                f"Chronos-2 input series is empty at index {index}."
             )
-            continue
 
-        try:
-            model.fit(
-                x_hist,
-                fh=fh,
-            )
-            xx_pred = model.predict(fh)
-            labels = compute_label_vector(
-                x_hist,
-                xx_pred,
-            )
-            labels = np.asarray(
-                labels,
-                dtype=np.int32,
-            ).reshape(-1)
+        xx_pred = chronos_forecast(
+            x=x_hist,
+            h=n_horizons,
+            model_name=MODEL_NAME,
+            freq=freq,
+        )
+        labels = compute_label_vector(
+            x_hist,
+            xx_pred,
+        )
+        labels = np.asarray(
+            labels,
+            dtype=np.int32,
+        ).reshape(-1)
 
-            if labels.size != n_horizons:
-                fixed = np.zeros(
-                    n_horizons,
-                    dtype=np.int32,
-                )
-                n_copy = min(
-                    labels.size,
-                    n_horizons,
-                )
-                fixed[:n_copy] = labels[:n_copy]
-                labels = fixed
-
-        except Exception as error:
-            print(
-                f"[WARN] Chronos failed for series index={index}; "
-                f"using zero labels. Reason: {error}"
-            )
-            labels = np.zeros(
-                n_horizons,
-                dtype=np.int32,
+        if labels.size != n_horizons:
+            raise ValueError(
+                "Chronos-2 label length mismatch for series "
+                f"index {index}. Expected {n_horizons}, "
+                f"got {labels.size}."
             )
 
         all_labels.append(labels)
@@ -179,7 +131,6 @@ def _evaluate_all_horizons(
     *,
     freq_tag: str,
     window_mode: str,
-    model_key: str,
     containers,
     y_test_all,
     pred_test_all: np.ndarray,
@@ -199,19 +150,18 @@ def _evaluate_all_horizons(
             ],
             dtype=int,
         )
-        y_pred = np.asarray(
+        y_test_pred = np.asarray(
             pred_test_all[:, horizon_index],
             dtype=int,
         )
 
         res_test = compute_r_binary_eval(
             y_true=y_test,
-            y_pred=y_pred,
+            y_pred=y_test_pred,
             freq_tag=freq_tag,
             horizon_id=horizon_id,
             eval_type="test",
         )
-
         containers = store_r_test_result(
             containers,
             horizon_id,
@@ -219,7 +169,7 @@ def _evaluate_all_horizons(
         )
 
         print(
-            f"[TEST] {model_key}_{window_mode}_h{horizon_id:02d}: "
+            f"[TEST] chronos_{window_mode}_h{horizon_id:02d}: "
             f"{get_r_summary_accuracy(res_test):.4f}"
         )
 
@@ -242,7 +192,6 @@ def _evaluate_all_horizons(
             horizon_id=horizon_id,
             eval_type="real",
         )
-
         containers = store_r_real_result(
             containers,
             horizon_id,
@@ -251,7 +200,7 @@ def _evaluate_all_horizons(
         )
 
         print(
-            f"[REAL] {model_key}_{window_mode}_h{horizon_id:02d}: "
+            f"[REAL] chronos_{window_mode}_h{horizon_id:02d}: "
             f"{get_r_summary_accuracy(res_real):.4f}"
         )
 
@@ -262,46 +211,35 @@ def run_one_frequency_window(
     *,
     freq_tag: str,
     window_mode: str,
-    model_id: str,
-    device_map: str,
 ):
     paths = get_paths(
         freq_tag,
         window_mode=window_mode,
     )
-    model_key = str(model_id).strip().lower()
-    window_key = window_tag(window_mode)
+    model_key = "chronos"
+    freq = FREQUENCY_BY_TAG[freq_tag]
 
     print("\n==================================================")
     print(
-        f" CHRONOS EXPERIMENT | freq={freq_tag} "
-        f"| mode={window_mode} | model={model_id}"
+        f" CHRONOS-2 EXPERIMENT | freq={freq_tag} "
+        f"| mode={window_mode}"
     )
     print("==================================================")
     print(f"Labeled : {paths.labeled_rds}")
     print(f"Split   : {paths.split_index_rds}")
     print(f"REAL    : {paths.real_eval_rds}")
+    print(f"Model   : {MODEL_NAME}")
     print(f"Out dir : {RESULTS_DIR / model_key}")
 
     results_dir = RESULTS_DIR / model_key
-    models_dir = (
-        MODELS_DIR
-        / model_key
-        / f"{freq_tag}_{window_key}"
-    )
-
     results_dir.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-    models_dir.mkdir(
         parents=True,
         exist_ok=True,
     )
 
     dataset = get_chronos_data(
         freq_tag=freq_tag,
-        model_id=model_id,
+        model_id=MODEL_ID,
         window_mode=window_mode,
     )
 
@@ -325,41 +263,26 @@ def run_one_frequency_window(
         f"y_real={_safe_len(y_real)}"
     )
     print(f"[INFO] n_horizons={n_horizons}")
-
-    models = get_sktime_models(
-        model_id=model_id,
-        random_state=42,
-        device_map=device_map,
-    )
-
-    name, model = next(iter(models.items()))
-    print(f"[MODEL] {name}")
-    print("[FIT] Skipped for Chronos zero-shot forecasting.")
+    print("[FIT] Skipped for Chronos-2 zero-shot forecasting.")
 
     print("[PREDICT] Forecasting TEST full horizon...")
-
-    pred_test_all = _forecast_chronos_labels(
+    pred_test_all = _forecast_chronos2_labels(
         series_list=X_test,
-        model=model,
         n_horizons=n_horizons,
+        freq=freq,
     )
 
     print("[PREDICT] Forecasting REAL full horizon...")
-
-    pred_real_all = _forecast_chronos_labels(
+    pred_real_all = _forecast_chronos2_labels(
         series_list=X_real,
-        model=model,
         n_horizons=n_horizons,
+        freq=freq,
     )
 
-    containers = init_r_eval_containers(
-        n_horizons
-    )
-
+    containers = init_r_eval_containers(n_horizons)
     containers = _evaluate_all_horizons(
         freq_tag=freq_tag,
         window_mode=window_mode,
-        model_key=model_key,
         containers=containers,
         y_test_all=y_test,
         pred_test_all=pred_test_all,
@@ -368,13 +291,9 @@ def run_one_frequency_window(
         series_name_real=series_name_real,
     )
 
-    eval_obj = build_r_consolidated_eval_object(
-        containers
-    )
+    eval_obj = build_r_consolidated_eval_object(containers)
     eval_rds_path = str(
-        RESULTS_DIR
-        / model_key
-        / f"{model_key}_eval_{freq_tag}.rds"
+        results_dir / f"{model_key}_eval_{freq_tag}.rds"
     )
 
     save_r_consolidated_eval_object(
@@ -389,44 +308,22 @@ def run_one_frequency_window(
 
 def main():
     print("\n===============================================")
-    print(" Running Chronos experiments (R -> Python)")
+    print(" Running Chronos-2 experiments (R -> Python)")
     print("===============================================")
-    print(f"PROJECT_ROOT       : {PROJECT_ROOT}")
-    print(f"FREQ_TAGS          : {FREQ_TAGS}")
-    print(f"MODEL_ID           : {MODEL_ID}")
-    print(f"WINDOW_MODES       : {WINDOW_MODES}")
-    print(f"Available models   : {get_available_model_ids()}")
-
-    device_map = detect_device()
-    print(f"DEVICE_MAP         : {device_map}")
-
-    model_ids = (
-        MODEL_ID
-        if isinstance(MODEL_ID, list)
-        else [MODEL_ID]
-    )
+    print(f"PROJECT_ROOT : {PROJECT_ROOT}")
+    print(f"FREQ_TAGS    : {FREQ_TAGS}")
+    print(f"MODEL_NAME   : {MODEL_NAME}")
+    print(f"WINDOW_MODES : {WINDOW_MODES}")
 
     for freq_tag in FREQ_TAGS:
         for window_mode in WINDOW_MODES:
-            for model_id in model_ids:
-                try:
-                    run_one_frequency_window(
-                        freq_tag=freq_tag,
-                        window_mode=window_mode,
-                        model_id=model_id,
-                        device_map=device_map,
-                    )
-                except Exception as error:
-                    print(
-                        f"[SKIP] freq={freq_tag} "
-                        f"mode={window_mode} "
-                        f"model={model_id} "
-                        f"| reason: {error}"
-                    )
-                    continue
+            run_one_frequency_window(
+                freq_tag=freq_tag,
+                window_mode=window_mode,
+            )
 
     print("\n===============================================")
-    print(" All requested Chronos experiments completed.")
+    print(" All requested Chronos-2 experiments completed.")
     print("===============================================")
 
 

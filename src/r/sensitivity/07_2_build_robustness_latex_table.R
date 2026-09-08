@@ -1,7 +1,15 @@
-# =====================================================================
+# ==============================================================================
 # 07_2_build_robustness_latex_table.R
-# Build LaTeX table from robustness sensitivity summary
-# =====================================================================
+#
+# Purpose:
+#   Render the sensitivity robustness summary as a LaTeX table.
+# Inputs:
+#   The sensitivity robustness RDS table.
+# Outputs:
+#   A LaTeX table under results/sensitivity/paper/tables.
+# Run from:
+#   Project root, directly or through 07_8_run_all_paper_outputs.R.
+# ==============================================================================
 
 source("src/r/sensitivity/00_sensitivity_common.R")
 

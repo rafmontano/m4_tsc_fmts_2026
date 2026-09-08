@@ -1,22 +1,26 @@
-# =====================================================================
+# ==============================================================================
 # 07_1_build_robustness_table.R
-# Build paper-facing robustness table for lambda sensitivity analysis
-# =====================================================================
+#
+# Purpose:
+#   Build the paper-facing robustness table for lambda sensitivity.
+# Inputs:
+#   Sensitivity summary and surface results.
+# Outputs:
+#   Robustness tables under results/sensitivity/paper/tables.
+# Run from:
+#   Project root, directly or through 07_8_run_all_paper_outputs.R.
+# ==============================================================================
 
 source("src/r/sensitivity/00_sensitivity_common.R")
 
-# ---------------------------------------------------------------------
-# Output folders
-# ---------------------------------------------------------------------
+# Output folders -------------------------------------------------------------
 
 paper_dir <- file.path("results", "sensitivity", "paper")
 table_dir <- file.path(paper_dir, "tables")
 
 dir.create(table_dir, recursive = TRUE, showWarnings = FALSE)
 
-# ---------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------
+# Helper functions -----------------------------------------------------------
 
 pretty_model <- function(x) {
   dplyr::recode(
@@ -40,7 +44,7 @@ lambda_range_label <- function(x) {
   if (length(x) == 0 || all(is.na(x))) {
     return("--")
   }
-  
+
   paste0(
     sprintf("%.3f", min(x, na.rm = TRUE)),
     "--",
@@ -49,14 +53,13 @@ lambda_range_label <- function(x) {
 }
 
 read_sensitivity_results <- function(period_use) {
-  
   set_sensitivity_frequency(period_use)
-  
+
   path <- file.path(
     results_dir,
     paste0("lambda_sensitivity_", FREQ_TAG, ".rds")
   )
-  
+
   readRDS(path) |>
     dplyr::mutate(
       period = PERIOD_USE,
@@ -66,7 +69,6 @@ read_sensitivity_results <- function(period_use) {
 }
 
 add_improvement <- function(x) {
-  
   base_rows <- x |>
     dplyr::filter(model_id %in% c("smyl", "chronos")) |>
     dplyr::select(
@@ -75,7 +77,7 @@ add_improvement <- function(x) {
       base_model = model_id,
       base_owa = owa_vs_naive2
     )
-  
+
   x |>
     dplyr::filter(model_id %in% c("smyl_mantis", "chronos_mantis")) |>
     dplyr::mutate(base_model = model_base(model_id)) |>
@@ -90,9 +92,7 @@ add_improvement <- function(x) {
     )
 }
 
-# ---------------------------------------------------------------------
-# Load sensitivity surfaces
-# ---------------------------------------------------------------------
+# Load sensitivity surfaces --------------------------------------------------
 
 all_results <- purrr::map_dfr(
   PERIODS_TO_RUN,
@@ -101,26 +101,23 @@ all_results <- purrr::map_dfr(
 
 surface <- add_improvement(all_results)
 
-# ---------------------------------------------------------------------
-# Build robustness table
-# ---------------------------------------------------------------------
+# Build robustness table -----------------------------------------------------
 
 robustness_table <- surface |>
   dplyr::group_by(period, freq_tag, base_model, model_id) |>
   dplyr::group_modify(function(.x, .y) {
-    
     best_row <- .x |>
       dplyr::slice_max(improvement_pct, n = 1, with_ties = FALSE)
-    
+
     reference_row <- .x |>
       dplyr::filter(
         abs(lambda_up - reference_lambda_up) < 1e-9,
         abs(lambda_down - reference_lambda_down) < 1e-9
       )
-    
+
     within_1pct_best <- .x |>
       dplyr::filter(owa_vs_naive2 <= best_row$owa_vs_naive2 * 1.01)
-    
+
     tibble::tibble(
       base_model_label = pretty_model(.y$base_model),
       adjusted_model_label = pretty_model(.y$model_id),
@@ -149,9 +146,7 @@ robustness_table <- surface |>
   dplyr::arrange(period, base_model_label) |>
   dplyr::mutate(period = as.character(period))
 
-# ---------------------------------------------------------------------
-# Save CSV and RDS
-# ---------------------------------------------------------------------
+# Save CSV and RDS -----------------------------------------------------------
 
 out_csv <- file.path(table_dir, "sensitivity_robustness_table.csv")
 out_rds <- file.path(table_dir, "sensitivity_robustness_table.rds")

@@ -1,25 +1,15 @@
-# =====================================================================
-# File: src/r/paper/04d_best_window_last_horizon_cd.R
+# ==============================================================================
+# 04d_best_window_last_horizon_cd.R
+#
 # Purpose:
-#   1) Read consolidated window-mode accuracy results from:
-#        results/paper/tables/total/model_accuracy_by_frequency.csv
-#   2) For each frequency and model, keep only the last horizon.
-#   3) For window-sensitive models, select the best window mode at the
-#      last horizon.
-#   4) For fixed benchmarks FFORMA and SMYL, keep default only.
-#   5) Save filtered best-window table.
-#   6) Build CD input table: frequency × model.
-#   7) Produce CD diagram based on best last-horizon result per frequency.
-#
-# Input:
-#   results/paper/tables/total/model_accuracy_by_frequency.csv
-#
+#   Select best-window last-horizon results and build a critical-difference diagram.
+# Inputs:
+#   The consolidated window-mode accuracy table.
 # Outputs:
-#   results/paper/tables/total/model_accuracy_best_window_last_horizon.csv
-#   results/paper/tables/total/model_accuracy_best_window_last_horizon.rds
-#   results/paper/tables/total/model_accuracy_best_window_last_horizon_cd.csv
-#   results/paper/figures/total/cd_diagram_best_window_last_horizon.pdf
-# =====================================================================
+#   Best-window tables and a critical-difference figure.
+# Run from:
+#   Project root.
+# ==============================================================================
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -33,12 +23,10 @@ if (!requireNamespace("scmamp", quietly = TRUE)) {
 }
 suppressPackageStartupMessages(library(scmamp))
 
-# ---------------------------------------------------------------------
-# 0) Config
-# ---------------------------------------------------------------------
+# Configuration --------------------------------------------------------------
 
 base_dir <- file.path("results", "paper", "tables", "total")
-fig_dir  <- file.path("results", "paper", "figures", "total")
+fig_dir <- file.path("results", "paper", "figures", "total")
 
 dir.create(base_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
@@ -89,9 +77,7 @@ preferred_model_order <- c(
   "CHRONOS"
 )
 
-# ---------------------------------------------------------------------
-# 1) Read consolidated results
-# ---------------------------------------------------------------------
+# Read consolidated results --------------------------------------------------
 
 if (!file.exists(input_csv)) {
   stop("Input file not found: ", input_csv)
@@ -114,9 +100,7 @@ if (length(missing_cols) > 0L) {
   )
 }
 
-# ---------------------------------------------------------------------
-# 2) Keep last horizon per frequency/model/window mode
-# ---------------------------------------------------------------------
+# Keep last horizon per frequency/model/window mode --------------------------
 
 df_last <- df %>%
   mutate(
@@ -130,9 +114,7 @@ df_last <- df %>%
   filter(horizon == max(horizon, na.rm = TRUE)) %>%
   ungroup()
 
-# ---------------------------------------------------------------------
-# 3) Select best window mode per frequency/model
-# ---------------------------------------------------------------------
+# Select best window mode per frequency/model --------------------------------
 # For FFORMA and SMYL:
 #   Keep default only because they are fixed forecasting benchmarks.
 #
@@ -169,9 +151,7 @@ saveRDS(df_best, out_best_rds)
 message("Saved best-window last-horizon table to: ", out_best_csv)
 print(df_best)
 
-# ---------------------------------------------------------------------
-# 4) Build CD input table: frequency × model
-# ---------------------------------------------------------------------
+# Build CD input table: frequency × model ------------------------------------
 
 models_complete <- df_best %>%
   distinct(frequency, model) %>%
@@ -212,9 +192,7 @@ readr::write_csv(wide_cd, out_cd_csv)
 message("Saved CD input table to: ", out_cd_csv)
 print(wide_cd)
 
-# ---------------------------------------------------------------------
-# 5) Produce CD diagram
-# ---------------------------------------------------------------------
+# Produce CD diagram ---------------------------------------------------------
 
 if (length(models_complete) < 2L) {
   warning("Only one complete model available. CD plot requires >= 2 models.")
@@ -222,7 +200,7 @@ if (length(models_complete) < 2L) {
 }
 
 mat <- as.data.frame(wide_cd)
-rn  <- mat$frequency
+rn <- mat$frequency
 mat <- as.matrix(mat[, -1, drop = FALSE])
 rownames(mat) <- as.character(rn)
 

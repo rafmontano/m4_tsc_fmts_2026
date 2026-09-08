@@ -1,29 +1,31 @@
-# =====================================================================
+# ==============================================================================
 # 99_sensitivity_run_all.R
-# Run complete sensitivity-analysis and paper-output pipeline
-# =====================================================================
+#
+# Purpose:
+#   Run the complete sensitivity-analysis and paper-output pipeline.
+# Inputs:
+#   Installed R and Python environments plus the M4 dataset.
+# Outputs:
+#   Sensitivity datasets, results, tables, and figures.
+# Run from:
+#   Project root.
+# ==============================================================================
 
 cat("\n")
 cat("============================================================\n")
 cat("[99] Starting complete sensitivity pipeline\n")
 cat("============================================================\n")
 
-
-# ---------------------------------------------------------------------
-# Chronos-2
+# Chronos-2 ------------------------------------------------------------------
 #
-# The model is already cached locally on this workstation.
-# Keep Hugging Face offline during the experiment so forecasting does
-# not perform unnecessary Hub requests or trigger rate limiting.
-# ---------------------------------------------------------------------
+# Use cached model files during the experiment to avoid unnecessary Hub requests
+# or rate limiting.
 
 Sys.setenv(
   HF_HUB_OFFLINE = "1"
 )
 
-
-# ---------------------------------------------------------------------
-# Complete pipeline
+# Complete pipeline ----------------------------------------------------------
 #
 # 01   Create M4 datasets
 # 02   Add SMYL, FFORMA and Naive2
@@ -37,7 +39,6 @@ Sys.setenv(
 # 08   Identify Daily case-study candidates
 # 09   Build Daily case-study figures
 # 09a  Build up/down case-study candidates and final Figure 1
-# ---------------------------------------------------------------------
 
 pipeline_scripts <- c(
   "src/r/sensitivity/01_create_m4_forecast_dataset.R",
@@ -54,13 +55,9 @@ pipeline_scripts <- c(
   "src/r/sensitivity/09a_up_down_case_study_figures.R"
 )
 
-
-# ---------------------------------------------------------------------
-# Run
-# ---------------------------------------------------------------------
+# Run ------------------------------------------------------------------------
 
 for (script_path in pipeline_scripts) {
-  
   # Script 05 uses cached parallel lambda jobs.
   # Remove them immediately before the sensitivity grid is rerun so
   # results are always rebuilt from the current forecasts.
@@ -68,79 +65,63 @@ for (script_path in pipeline_scripts) {
     script_path,
     "src/r/sensitivity/05_run_lambda_sensitivity.R"
   )) {
-    
     cat(
       "\n[99] Clearing previous sensitivity cache\n"
     )
-    
+
     unlink(
       "data/cache/sensitivity",
       recursive = TRUE,
       force = TRUE
     )
   }
-  
-  
+
   cat(
     "\n------------------------------------------------------------\n"
   )
-  
+
   cat(
     "[99] Running:",
     script_path,
     "\n"
   )
-  
+
   cat(
     "------------------------------------------------------------\n"
   )
-  
-  
+
   source(
     script_path
   )
-  
-  
+
   cat(
     "[99] Completed:",
     script_path,
     "\n"
   )
-  
-  
+
   gc()
 }
 
-
-# ---------------------------------------------------------------------
-# Completed
-# ---------------------------------------------------------------------
+# Completed ------------------------------------------------------------------
 
 cat("\n")
 cat("============================================================\n")
 cat("[99] Complete sensitivity pipeline completed\n")
 cat("============================================================\n")
 
-
-# ---------------------------------------------------------------------
-# Main Tables 1 and 2
-# ---------------------------------------------------------------------
+# Main Tables 1 and 2 --------------------------------------------------------
 
 cat("\n[99] Tables 1 and 2:\n")
 cat("  results/paper/tables\n")
 
-# ---------------------------------------------------------------------
-# Sensitivity summary
-# ---------------------------------------------------------------------
+# Sensitivity summary --------------------------------------------------------
 
 cat("\n[99] Sensitivity summary:\n")
 cat("  results/sensitivity/sensitivity_summary_all.rds\n")
 cat("  results/sensitivity/sensitivity_summary_all.csv\n")
 
-
-# ---------------------------------------------------------------------
-# Sensitivity paper outputs
-# ---------------------------------------------------------------------
+# Sensitivity paper outputs --------------------------------------------------
 
 cat("\n[99] Sensitivity paper tables:\n")
 cat("  results/sensitivity/paper/tables\n")
@@ -148,21 +129,14 @@ cat("  results/sensitivity/paper/tables\n")
 cat("\n[99] Sensitivity paper figures:\n")
 cat("  results/sensitivity/paper/figures\n")
 
-
-# ---------------------------------------------------------------------
-# Case-study identification
-# ---------------------------------------------------------------------
+# Case-study identification --------------------------------------------------
 
 cat("\n[99] Case-study rankings:\n")
 cat("  results/sensitivity/paper/case_studies\n")
 
-
-# ---------------------------------------------------------------------
-# Main paper case-study figures
-# ---------------------------------------------------------------------
+# Main paper case-study figures ----------------------------------------------
 
 cat("\n[99] Main paper figures:\n")
 cat("  results/paper/figures\n")
-
 
 cat("\n[99] End-to-end run complete.\n")

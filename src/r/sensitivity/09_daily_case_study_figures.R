@@ -1,7 +1,15 @@
-# =====================================================================
+# ==============================================================================
 # 09_daily_case_study_figures.R
-# Daily case-study figures: Chronos-MANTIS and SMYL-MANTIS
-# =====================================================================
+#
+# Purpose:
+#   Create Daily case-study figures for adjusted Chronos and SMYL forecasts.
+# Inputs:
+#   Selected case-study series and the Daily sensitivity dataset.
+# Outputs:
+#   Case-study figures under results/sensitivity/paper/figures.
+# Run from:
+#   Project root, directly or through 99_sensitivity_run_all.R.
+# ==============================================================================
 
 library(dplyr)
 library(tidyr)
@@ -9,9 +17,7 @@ library(ggplot2)
 
 source("src/r/sensitivity/00_sensitivity_common.R")
 
-# ---------------------------------------------------------------------
-# Settings
-# ---------------------------------------------------------------------
+# Configuration --------------------------------------------------------------
 
 set_sensitivity_frequency("Daily")
 
@@ -59,14 +65,12 @@ adjustment_colour <- unname(plot_colours[["MANTIS-adjusted forecast"]])
 out_dir <- "results/paper/figures"
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-# ---------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------
+# Helper functions -----------------------------------------------------------
 
 m4_daily_start_date <- function(x) {
   st <- start(x)
   freq <- frequency(x)
-  
+
   if (length(st) >= 2 && freq > 1) {
     as.Date(paste0(st[1], "-01-01")) + st[2] - 1
   } else {
@@ -83,15 +87,14 @@ adjust_forecast_local <- function(base_forecast,
                                   mantis_final,
                                   lambda_up,
                                   lambda_down) {
-  
   base_final <- direction_label_local(tail(base_forecast, 1), last_x)
-  
+
   gamma <- dplyr::case_when(
     base_final == mantis_final ~ 1,
     base_final != mantis_final & mantis_final == 1 ~ lambda_up,
     base_final != mantis_final & mantis_final == 0 ~ lambda_down
   )
-  
+
   gamma * base_forecast
 }
 
@@ -100,7 +103,7 @@ publication_style <- function(legend_labels = plot_series_levels) {
     nrow = 1,
     byrow = TRUE
   )
-  
+
   list(
     scale_colour_manual(
       values = plot_colours,
@@ -151,17 +154,16 @@ publication_style <- function(legend_labels = plot_series_levels) {
 build_case_data <- function(dataset, st, base_model, panel_title,
                             lambda_up, lambda_down,
                             history_multiple = 2) {
-  
   s <- dataset[[which(vapply(dataset, function(z) z$st, character(1)) == st)]]
-  
+
   y_hist <- as.numeric(s$x)
   y_test <- as.numeric(s$xx)
   h <- length(y_test)
   last_x <- tail(y_hist, 1)
-  
+
   base_fc <- as.numeric(s$fct[[base_model]])
   mantis_final <- tail(as.integer(s$direction$mantis), 1)
-  
+
   adjusted_fc <- adjust_forecast_local(
     base_forecast = base_fc,
     last_x = last_x,
@@ -169,13 +171,13 @@ build_case_data <- function(dataset, st, base_model, panel_title,
     lambda_up = lambda_up,
     lambda_down = lambda_down
   )
-  
+
   start_date <- m4_daily_start_date(s$x)
   hist_dates <- seq.Date(from = start_date, by = "day", length.out = length(y_hist))
   test_dates <- seq.Date(from = max(hist_dates) + 1, by = "day", length.out = h)
-  
+
   plot_start_date <- max(hist_dates) - history_multiple * h + 1
-  
+
   observed_df <- tibble::tibble(
     panel = panel_title,
     date = hist_dates,
@@ -183,14 +185,14 @@ build_case_data <- function(dataset, st, base_model, panel_title,
     series = "Training data"
   ) |>
     filter(date >= plot_start_date)
-  
+
   future_df <- tibble::tibble(
     panel = panel_title,
     date = test_dates,
     value = y_test,
     series = "Test data"
   )
-  
+
   fc_df <- tibble::tibble(
     panel = panel_title,
     date = test_dates,
@@ -209,11 +211,11 @@ build_case_data <- function(dataset, st, base_model, panel_title,
         "Adjusted" = "MANTIS-adjusted forecast"
       )
     )
-  
+
   # Use the same relative position in every panel. The arrow runs from the
   # base forecast to the adjusted forecast and has one head at its destination.
   arrow_i <- ceiling(h / 2)
-  
+
   arrow_df <- tibble::tibble(
     panel = panel_title,
     x = test_dates[arrow_i],
@@ -221,7 +223,7 @@ build_case_data <- function(dataset, st, base_model, panel_title,
     y = base_fc[arrow_i],
     yend = adjusted_fc[arrow_i]
   )
-  
+
   list(
     lines = bind_rows(observed_df, future_df, fc_df) |>
       mutate(
@@ -232,13 +234,13 @@ build_case_data <- function(dataset, st, base_model, panel_title,
 }
 
 plot_one_case <- function(
-    case_data,
-    panel_title,
-    legend_labels = plot_series_levels) {
-  
+  case_data,
+  panel_title,
+  legend_labels = plot_series_levels
+) {
   line_df <- case_data$lines
   arrow_df <- case_data$arrows
-  
+
   ggplot(
     data = line_df,
     aes(
@@ -279,9 +281,7 @@ plot_one_case <- function(
     publication_style(legend_labels = legend_labels)
 }
 
-# ---------------------------------------------------------------------
-# Load sensitivity dataset
-# ---------------------------------------------------------------------
+# Load sensitivity dataset ---------------------------------------------------
 
 dataset <- read_sensitivity()
 
@@ -322,14 +322,12 @@ smyl_plot <- plot_one_case(
   )
 )
 
-# ---------------------------------------------------------------------
-# Save PNG and vector-PDF versions
-# ---------------------------------------------------------------------
+# Save PNG and vector-PDF versions -------------------------------------------
 
 save_publication_plot <- function(plot, filename_stem, width, height) {
   png_file <- file.path(out_dir, paste0(filename_stem, ".png"))
   pdf_file <- file.path(out_dir, paste0(filename_stem, ".pdf"))
-  
+
   ggsave(
     filename = png_file,
     plot = plot,
@@ -339,7 +337,7 @@ save_publication_plot <- function(plot, filename_stem, width, height) {
     dpi = 300,
     bg = "white"
   )
-  
+
   ggsave(
     filename = pdf_file,
     plot = plot,
@@ -350,7 +348,7 @@ save_publication_plot <- function(plot, filename_stem, width, height) {
     bg = "white",
     useDingbats = FALSE
   )
-  
+
   invisible(c(png = png_file, pdf = pdf_file))
 }
 
@@ -368,9 +366,7 @@ save_publication_plot(
   height = 5.5
 )
 
-# ---------------------------------------------------------------------
-# Combined two-panel figure without extra packages
-# ---------------------------------------------------------------------
+# Combined two-panel figure without extra packages ---------------------------
 
 combined_lines <- bind_rows(lapply(case_data, `[[`, "lines"))
 combined_arrows <- bind_rows(lapply(case_data, `[[`, "arrows"))
@@ -413,7 +409,7 @@ combined_plot <-
       length = grid::unit(0.11, "inches")
     )
   ) +
-  facet_wrap(~ panel, scales = "free_y", nrow = 1) +
+  facet_wrap(~panel, scales = "free_y", nrow = 1) +
   labs(
     x = NULL,
     y = "Value"

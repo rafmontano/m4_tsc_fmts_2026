@@ -1,6 +1,15 @@
-# File: src/r/paper/06_class_imbalance_bars.R
+# ==============================================================================
+# 06_class_imbalance_bars.R
+#
 # Purpose:
-#   Visualise class imbalance by frequency using class_proportion.csv
+#   Plot class distributions by M4 frequency.
+# Inputs:
+#   data/export/class_proportion.csv.
+# Outputs:
+#   A class-imbalance figure under results/paper/figures.
+# Run from:
+#   Project root.
+# ==============================================================================
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -18,7 +27,7 @@ if (!file.exists(input_csv)) {
 df_counts <- readr::read_csv(input_csv, show_col_types = FALSE)
 
 required_cols <- c("frequency", "class_label", "n")
-missing_cols  <- setdiff(required_cols, names(df_counts))
+missing_cols <- setdiff(required_cols, names(df_counts))
 if (length(missing_cols) > 0) {
   stop("Missing required columns in input CSV: ", paste(missing_cols, collapse = ", "))
 }
@@ -31,19 +40,21 @@ preferred_class_levels <- c("Up", "Neutral", "Down")
 
 df_counts <- df_counts %>%
   mutate(
-    frequency   = as.character(frequency),
+    frequency = as.character(frequency),
     class_label = as.character(class_label),
     class_label = case_when(
-      tolower(class_label) == "up"      ~ "Up",
+      tolower(class_label) == "up" ~ "Up",
       tolower(class_label) == "neutral" ~ "Neutral",
-      tolower(class_label) == "down"    ~ "Down",
+      tolower(class_label) == "down" ~ "Down",
       TRUE ~ class_label
     )
   )
 
 observed_classes <- unique(df_counts$class_label)
-class_levels <- c(preferred_class_levels[preferred_class_levels %in% observed_classes],
-                  setdiff(observed_classes, preferred_class_levels))
+class_levels <- c(
+  preferred_class_levels[preferred_class_levels %in% observed_classes],
+  setdiff(observed_classes, preferred_class_levels)
+)
 
 df_counts <- df_counts %>%
   tidyr::complete(
@@ -86,4 +97,3 @@ p <- ggplot(df_props, aes(x = frequency, y = prop, fill = class_label)) +
 
 ggsave(fig_path, p, width = 6.3, height = 3.8)
 message("Class imbalance bar chart saved to: ", fig_path)
-

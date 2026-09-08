@@ -1,10 +1,15 @@
-# =====================================================================
-# File: src/r/paper/01_m4_pivot_period_type.R
+# ==============================================================================
+# 01_m4_pivot_period_type.R
+#
 # Purpose:
-#   Pivot: rows = period, columns = type, values = number of series.
+#   Summarise M4 series counts by frequency and domain.
+# Inputs:
+#   The M4 dataset from M4comp2018.
 # Outputs:
-#   results/paper/tables/m4_pivot_period_type.{csv,rds}
-# =====================================================================
+#   CSV and RDS summary tables under results/paper/tables.
+# Run from:
+#   Project root.
+# ==============================================================================
 
 suppressPackageStartupMessages({
   library(M4comp2018)
@@ -54,4 +59,3 @@ saveRDS(pivot_tbl, output_rds)
 print(pivot_tbl)
 message("Pivot table saved to: ", output_csv)
 message("RDS object saved to:  ", output_rds)
-

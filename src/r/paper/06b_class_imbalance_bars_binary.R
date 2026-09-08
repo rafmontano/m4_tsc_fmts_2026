@@ -1,10 +1,15 @@
-# File: src/r/paper/06b_class_imbalance_bars_binary.R
+# ==============================================================================
+# 06b_class_imbalance_bars_binary.R
+#
 # Purpose:
-#   Compute and visualise binary class balance by M4 frequency.
-#   Stored labels retain Up/Down for compatibility with existing data,
-#   while the figure uses the paper terminology Increase/Non-increase:
-#     Increase       if y_{T+h} > y_T
-#     Non-increase   otherwise
+#   Compute and plot binary class balance by M4 frequency and horizon.
+# Inputs:
+#   The M4 dataset from M4comp2018.
+# Outputs:
+#   Binary class-proportion tables and figures.
+# Run from:
+#   Project root.
+# ==============================================================================
 
 suppressPackageStartupMessages({
   library(M4comp2018)
@@ -15,55 +20,49 @@ suppressPackageStartupMessages({
   library(scales)
 })
 
-# ---------------------------------------------------------------------
-# Settings
-# ---------------------------------------------------------------------
+# Configuration --------------------------------------------------------------
 
 export_dir <- file.path("data", "export")
-fig_dir    <- file.path("results", "paper", "figures")
+fig_dir <- file.path("results", "paper", "figures")
 
 # Paper-wide display standards
-colour_increase    <- "#009E73"
+colour_increase <- "#009E73"
 colour_nonincrease <- "#D55E00"
-colour_ink         <- "#1A1A1A"
-colour_lightgray   <- "#D9D9D9"
+colour_ink <- "#1A1A1A"
+colour_lightgray <- "#D9D9D9"
 
 dir.create(export_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
-output_csv_freq    <- file.path(export_dir, "class_proportion_binary.csv")
+output_csv_freq <- file.path(export_dir, "class_proportion_binary.csv")
 output_csv_horizon <- file.path(export_dir, "class_proportion_binary_horizon.csv")
 
 out_pdf <- file.path(fig_dir, "m4_class_imbalance_by_frequency_bar_binary.pdf")
 out_png <- file.path(fig_dir, "m4_class_imbalance_by_frequency_bar_binary.png")
 out_svg <- file.path(fig_dir, "m4_class_imbalance_by_frequency_bar_binary.svg")
 
-freq_levels  <- c("Hourly", "Daily", "Weekly", "Monthly", "Quarterly", "Yearly")
+freq_levels <- c("Hourly", "Daily", "Weekly", "Monthly", "Quarterly", "Yearly")
 class_levels <- c("Up", "Down")
 
-# ---------------------------------------------------------------------
-# Load M4 data
-# ---------------------------------------------------------------------
+# Load M4 data ---------------------------------------------------------------
 
 data(M4)
 
-# ---------------------------------------------------------------------
-# Build binary directional labels
-# ---------------------------------------------------------------------
+# Build binary directional labels --------------------------------------------
 
 labels <- bind_rows(lapply(seq_along(M4), function(i) {
   s <- M4[[i]]
-  
+
   frequency <- s$period
-  x  <- as.numeric(s$x)
+  x <- as.numeric(s$x)
   xx <- as.numeric(s$xx)
-  
+
   if (length(x) == 0 || length(xx) == 0) {
     return(tibble())
   }
-  
+
   y_T <- tail(x, 1)
-  
+
   tibble(
     series_id   = i,
     frequency   = frequency,
@@ -74,9 +73,7 @@ labels <- bind_rows(lapply(seq_along(M4), function(i) {
   )
 }))
 
-# ---------------------------------------------------------------------
-# Frequency-level class counts
-# ---------------------------------------------------------------------
+# Frequency-level class counts -----------------------------------------------
 
 df_counts_freq <- labels %>%
   count(frequency, class_label, name = "n") %>%
@@ -93,9 +90,7 @@ df_counts_freq <- labels %>%
 
 readr::write_csv(df_counts_freq, output_csv_freq)
 
-# ---------------------------------------------------------------------
-# Horizon-level class counts
-# ---------------------------------------------------------------------
+# Horizon-level class counts -------------------------------------------------
 
 df_counts_horizon <- labels %>%
   count(frequency, horizon, class_label, name = "n") %>%
@@ -117,9 +112,7 @@ readr::write_csv(df_counts_horizon, output_csv_horizon)
 rm(labels)
 invisible(gc())
 
-# ---------------------------------------------------------------------
-# Plot frequency-level class proportions
-# ---------------------------------------------------------------------
+# Plot frequency-level class proportions -------------------------------------
 
 df_props <- df_counts_freq %>%
   group_by(frequency) %>%

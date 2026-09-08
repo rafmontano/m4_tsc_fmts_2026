@@ -1,7 +1,15 @@
-# =====================================================================
+# ==============================================================================
 # 07_4_plot_heatmaps_all_model_frequency.R
-# Plot all sensitivity heatmaps by frequency and adjusted model
-# =====================================================================
+#
+# Purpose:
+#   Plot sensitivity heatmaps for every frequency and adjusted model.
+# Inputs:
+#   The long-form sensitivity-surface RDS table.
+# Outputs:
+#   Heatmap figures under results/sensitivity/paper/figures.
+# Run from:
+#   Project root, directly or through 07_8_run_all_paper_outputs.R.
+# ==============================================================================
 
 source("src/r/sensitivity/00_sensitivity_common.R")
 
@@ -14,9 +22,7 @@ colour_neutral <- "#FFFFFF"
 colour_positive <- "#009E73"
 colour_ink <- "#1A1A1A"
 
-# ---------------------------------------------------------------------
-# Input / output
-# ---------------------------------------------------------------------
+# Input / output -------------------------------------------------------------
 
 table_dir <- file.path("results", "sensitivity", "paper", "tables")
 figure_dir <- file.path("results", "sensitivity", "paper", "figures")
@@ -59,9 +65,7 @@ surface <- surface |>
     )
   )
 
-# ---------------------------------------------------------------------
-# Plot markers
-# ---------------------------------------------------------------------
+# Plot markers ---------------------------------------------------------------
 
 best_points <- surface |>
   dplyr::group_by(period, model_label) |>
@@ -75,10 +79,7 @@ no_adjustment_points <- surface |>
     lambda_down = 1
   )
 
-
-# ---------------------------------------------------------------------
-# Plot
-# ---------------------------------------------------------------------
+# Plot -----------------------------------------------------------------------
 
 p <- ggplot(
   surface,
@@ -150,9 +151,7 @@ p <- ggplot(
     axis.text = element_text(colour = colour_ink)
   )
 
-# ---------------------------------------------------------------------
-# Save
-# ---------------------------------------------------------------------
+# Save -----------------------------------------------------------------------
 
 out_pdf <- file.path(figure_dir, "01_heatmaps_all_model_frequency.pdf")
 out_png <- file.path(figure_dir, "01_heatmaps_all_model_frequency.png")

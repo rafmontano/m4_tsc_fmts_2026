@@ -1,12 +1,15 @@
-# =====================================================================
-# File: src/r/paper/02_m4_period_bar.R
+# ==============================================================================
+# 02_m4_period_bar.R
+#
 # Purpose:
-#   Horizontal bar chart of M4 series counts per period.
+#   Plot the number of M4 series in each frequency.
+# Inputs:
+#   The M4 dataset from M4comp2018.
 # Outputs:
-#   results/paper/figures/m4_period_bar.pdf
-#   results/paper/figures/m4_period_bar.png
-#   results/paper/figures/m4_period_bar.svg
-# =====================================================================
+#   PDF, PNG, and SVG figures under results/paper/figures.
+# Run from:
+#   Project root.
+# ==============================================================================
 
 suppressPackageStartupMessages({
   library(M4comp2018)
@@ -18,8 +21,8 @@ suppressPackageStartupMessages({
 })
 
 # Paper-wide display standards
-colour_bar       <- "#0072B2"
-colour_ink       <- "#1A1A1A"
+colour_bar <- "#0072B2"
+colour_ink <- "#1A1A1A"
 colour_lightgray <- "#D9D9D9"
 
 # Output directory
@@ -40,7 +43,7 @@ period_levels <- c("Hourly", "Daily", "Weekly", "Monthly", "Quarterly", "Yearly"
 # Validate periods (helps catch subset / unexpected labels)
 observed_periods <- sort(unique(m4_meta$period))
 missing_expected <- setdiff(period_levels, observed_periods)
-unexpected        <- setdiff(observed_periods, period_levels)
+unexpected <- setdiff(observed_periods, period_levels)
 
 if (length(missing_expected) > 0) {
   warning("Missing expected periods: ", paste(missing_expected, collapse = ", "))

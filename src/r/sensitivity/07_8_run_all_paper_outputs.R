@@ -1,7 +1,15 @@
-# =====================================================================
+# ==============================================================================
 # 07_8_run_all_paper_outputs.R
-# Run all sensitivity paper-output scripts
-# =====================================================================
+#
+# Purpose:
+#   Run all sensitivity paper-output scripts sequentially.
+# Inputs:
+#   Completed sensitivity-analysis result files.
+# Outputs:
+#   Sensitivity paper tables and figures.
+# Run from:
+#   Project root, directly or through 99_sensitivity_run_all.R.
+# ==============================================================================
 
 cat("\n[07_8] Starting sensitivity paper-output pipeline\n")
 

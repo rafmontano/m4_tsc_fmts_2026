@@ -1,8 +1,15 @@
-# File: src/python/get_sktime_models.py
+# ==============================================================================
+# get_sktime_models.py
+#
 # Purpose:
-#   Central model registry for sktime TSC experiments.
-#   All models are implemented and selectable by MODEL_ID (string).
-#   Models are lazily instantiated to avoid importing heavy deps unless needed.
+#   Define and initialise the models available to the Python experiment runners.
+# Inputs:
+#   Model identifier, execution settings, and model hyperparameters.
+# Outputs:
+#   A dictionary containing the requested initialised models.
+# Used by:
+#   The conventional-classifier and Chronos experiment runners.
+# ==============================================================================
 
 from __future__ import annotations
 
@@ -17,7 +24,7 @@ def get_available_model_ids() -> List[str]:
         "ROCKET",
         "InceptionTime",
         "HIVECOTEV2",
-        "CHRONOS",  # ✅ Added
+        "CHRONOS",
     ]
 
 
@@ -31,7 +38,9 @@ def _build_registry() -> Dict[str, Callable[..., object]]:
         knn_k: int = 1,
         **_,
     ):
-        from sktime.classification.distance_based import KNeighborsTimeSeriesClassifier
+        from sktime.classification.distance_based import (
+            KNeighborsTimeSeriesClassifier,
+        )
 
         return KNeighborsTimeSeriesClassifier(
             n_neighbors=int(knn_k),
@@ -48,7 +57,9 @@ def _build_registry() -> Dict[str, Callable[..., object]]:
         knn_k: int = 1,
         **_,
     ):
-        from sktime.classification.distance_based import KNeighborsTimeSeriesClassifier
+        from sktime.classification.distance_based import (
+            KNeighborsTimeSeriesClassifier,
+        )
 
         return KNeighborsTimeSeriesClassifier(
             n_neighbors=int(knn_k),
@@ -123,17 +134,15 @@ def _build_registry() -> Dict[str, Callable[..., object]]:
             verbose=0,
         )
 
-    # ✅ NEW: Chronos factory
     def make_chronos(
-            *,
-            random_state: int,
-            device_map: str = None,
-            **_,
+        *,
+        random_state: int,
+        device_map: str = None,
+        **_,
     ):
-        from sktime.forecasting.chronos import ChronosForecaster
         import torch
+        from sktime.forecasting.chronos import ChronosForecaster
 
-        # Auto-detect if not provided
         if device_map is None:
             if torch.cuda.is_available():
                 device_map = "cuda"
@@ -145,7 +154,6 @@ def _build_registry() -> Dict[str, Callable[..., object]]:
         dtype = torch.bfloat16 if device_map in ["cuda", "mps"] else torch.float32
 
         return ChronosForecaster(
-           # model_path="amazon/chronos-bolt-tiny",
             model_path="amazon/chronos-t5-large",
             config={
                 "device_map": device_map,
@@ -185,15 +193,20 @@ def get_sktime_models(
     mid = str(model_id).strip()
     selected = available if mid.upper() == "ALL" else [mid]
 
-    unknown = [m for m in selected if m not in registry]
+    unknown = [model for model in selected if model not in registry]
+
     if unknown:
-        raise ValueError(f"Unknown model_id(s)={unknown}. Available={available}")
+        raise ValueError(
+            f"Unknown model_id(s)={unknown}. Available={available}"
+        )
 
     models: Dict[str, object] = {}
-    for m in selected:
-        factory = registry[m]
+
+    for model_id_selected in selected:
+        factory = registry[model_id_selected]
+
         try:
-            models[m] = factory(
+            models[model_id_selected] = factory(
                 n_jobs=n_jobs,
                 random_state=random_state,
                 knn_k=knn_k,
@@ -203,13 +216,13 @@ def get_sktime_models(
                 inception_epochs=inception_epochs,
                 inception_batch_size=inception_batch_size,
                 hivecote_time_limit_minutes=hivecote_time_limit_minutes,
-                device_map=device_map,  # passed to Chronos only
+                device_map=device_map,
             )
-        except Exception as e:
+        except Exception as error:
             raise RuntimeError(
-                f"Failed to initialize model '{m}'. "
-                f"Optional dependencies may be missing or misconfigured. "
-                f"Original error: {repr(e)}"
-            ) from e
+                f"Failed to initialize model '{model_id_selected}'. "
+                "Optional dependencies may be missing or misconfigured. "
+                f"Original error: {error!r}"
+            ) from error
 
     return models

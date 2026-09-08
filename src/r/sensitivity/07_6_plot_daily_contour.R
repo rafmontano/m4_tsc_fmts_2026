@@ -1,15 +1,21 @@
-# =====================================================================
+# ==============================================================================
 # 07_6_plot_daily_contour.R
-# Plot Daily two-panel sensitivity contour figure
-# =====================================================================
+#
+# Purpose:
+#   Plot the two-panel Daily sensitivity contour figure.
+# Inputs:
+#   The long-form sensitivity-surface RDS table.
+# Outputs:
+#   A Daily contour figure under results/sensitivity/paper/figures.
+# Run from:
+#   Project root, directly or through 07_8_run_all_paper_outputs.R.
+# ==============================================================================
 
 source("src/r/sensitivity/00_sensitivity_common.R")
 
 library(ggplot2)
 
-# ---------------------------------------------------------------------
-# Input / output
-# ---------------------------------------------------------------------
+# Input / output -------------------------------------------------------------
 
 table_dir <- file.path("results", "sensitivity", "paper", "tables")
 figure_dir <- file.path("results", "sensitivity", "paper", "figures")
@@ -27,9 +33,7 @@ daily_surface <- surface |>
     )
   )
 
-# ---------------------------------------------------------------------
-# Plot markers
-# ---------------------------------------------------------------------
+# Plot markers ---------------------------------------------------------------
 
 best_points <- daily_surface |>
   dplyr::group_by(model_label) |>
@@ -50,9 +54,7 @@ reference_points <- daily_surface |>
     lambda_down = reference_lambda_down
   )
 
-# ---------------------------------------------------------------------
-# Plot
-# ---------------------------------------------------------------------
+# Plot -----------------------------------------------------------------------
 
 p <- ggplot(
   daily_surface,
@@ -88,7 +90,7 @@ p <- ggplot(
     size = 2.6,
     stroke = 0.8
   ) +
-  facet_wrap(~ model_label, nrow = 1) +
+  facet_wrap(~model_label, nrow = 1) +
   scale_x_continuous(
     breaks = c(1.00, 1.04, 1.08, 1.12),
     labels = scales::label_number(accuracy = 0.01)
@@ -110,9 +112,7 @@ p <- ggplot(
     plot.subtitle = element_text(size = 9)
   )
 
-# ---------------------------------------------------------------------
-# Save
-# ---------------------------------------------------------------------
+# Save -----------------------------------------------------------------------
 
 out_pdf <- file.path(figure_dir, "03_contour_daily_two_panel.pdf")
 out_png <- file.path(figure_dir, "03_contour_daily_two_panel.png")

@@ -1,26 +1,15 @@
-# =====================================================================
-# File: src/r/paper/04b_table_accuracy_macroF1_by_frequency.R
+# ==============================================================================
+# 04b_table_accuracy_macroF1_by_frequency.R
 #
 # Purpose:
-#   Build one paper table per window mode:
-#     Model × (Accuracy by frequency + W.Avg)
-#           × (Macro F1 by frequency + W.Avg)
-#
-# Input:
-#   Consolidated evaluation RDS files:
-#     results/{model}/{model}_eval_{tag}.rds
-#
-# Expected structure:
-#   obj[[window_mode]]$real$summary
-#
-# Window modes:
-#   small, default, large, full
-#
+#   Build accuracy and macro-F1 tables by model, frequency, and window mode.
+# Inputs:
+#   Consolidated model-evaluation RDS files under results.
 # Outputs:
-# results/paper/tables/{window_mode}/model_accuracy_macroF1_by_frequency.csv
-#  results/paper/tables/{window_mode}/model_accuracy_macroF1_by_frequency_display.csv
-# results/paper/tables/{window_mode}/model_accuracy_macroF1_coverage.csv
-# =====================================================================
+#   Paper CSV tables under results/paper/tables.
+# Run from:
+#   Project root.
+# ==============================================================================
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -30,13 +19,12 @@ suppressPackageStartupMessages({
   library(readr)
 })
 
-# ---------------------------------------------------------------------
-# 0) CONFIG
-# ---------------------------------------------------------------------
+# Configuration --------------------------------------------------------------
 
 results_dir <- "results"
 
-window_modes <- c("small", "default", "large", "full")
+# window_modes <- c("small", "default", "large", "full")
+window_modes <- "default"
 benchmark_models <- c("fforma", "smyl")
 benchmark_window_mode <- "default"
 
@@ -73,23 +61,18 @@ model_levels_preferred <- c(
   "XGBoost",
   "InceptionTime",
   "ROCKET",
- # "HIVECOTEV2",
   "MANTIS",
   "CHRONOS",
   "SMYL",
   "FFORMA"
 )
 
-# ---------------------------------------------------------------------
-# 1) Output paths
-# ---------------------------------------------------------------------
+# Output paths ---------------------------------------------------------------
 
 out_dir <- file.path("results", "paper", "tables")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-# ---------------------------------------------------------------------
-# 2) Helpers
-# ---------------------------------------------------------------------
+# Helper functions -----------------------------------------------------------
 
 safe_read_rds <- function(path) {
   tryCatch(readRDS(path), error = function(e) NULL)
@@ -100,65 +83,64 @@ fmt3 <- function(x) {
 }
 
 read_one_eval_summary <- function(model_id, model, tag, dataset, window_mode) {
-  
   path <- file.path(results_dir, model_id, sprintf("%s_eval_%s.rds", model_id, tag))
-  
+
   if (!file.exists(path)) {
     return(tibble())
   }
-  
+
   obj <- safe_read_rds(path)
-  
+
   if (is.null(obj)) {
     warning("Failed to read RDS: ", path)
     return(tibble())
   }
-  
+
   effective_window_mode <- ifelse(
     model_id %in% benchmark_models,
     benchmark_window_mode,
     window_mode
   )
-  
+
   if (!(effective_window_mode %in% names(obj))) {
     warning("Window mode '", effective_window_mode, "' not found in: ", path)
     return(tibble())
   }
-  
+
   if (is.null(obj[[effective_window_mode]]$real) ||
-      is.null(obj[[effective_window_mode]]$real$summary)) {
+    is.null(obj[[effective_window_mode]]$real$summary)) {
     warning("Missing obj[[effective_window_mode]]$real$summary in: ", path)
     return(tibble())
   }
-  
+
   summ <- obj[[effective_window_mode]]$real$summary
-  
+
   if (!is.data.frame(summ) || nrow(summ) == 0L) {
     warning("Empty REAL summary in: ", path, " | window_mode=", window_mode)
     return(tibble())
   }
-  
+
   if (!("accuracy" %in% names(summ))) {
     warning("Column 'accuracy' not found in: ", path, " | window_mode=", window_mode)
     return(tibble())
   }
-  
+
   if (!("macro_f1" %in% names(summ))) {
     warning("Column 'macro_f1' not found in: ", path, " | window_mode=", window_mode)
     return(tibble())
   }
-  
+
   tibble(
     window_mode = window_mode,
     source_window_mode = effective_window_mode,
-    dataset     = dataset,
-    tag         = tag,
-    model_id    = model_id,
-    model       = model,
-    accuracy    = mean(as.numeric(summ$accuracy), na.rm = TRUE),
-    macro_f1    = mean(as.numeric(summ$macro_f1), na.rm = TRUE),
-    n_rows      = if ("n_rows" %in% names(summ)) sum(as.numeric(summ$n_rows), na.rm = TRUE) else NA_real_,
-    file        = path
+    dataset = dataset,
+    tag = tag,
+    model_id = model_id,
+    model = model,
+    accuracy = mean(as.numeric(summ$accuracy), na.rm = TRUE),
+    macro_f1 = mean(as.numeric(summ$macro_f1), na.rm = TRUE),
+    n_rows = if ("n_rows" %in% names(summ)) sum(as.numeric(summ$n_rows), na.rm = TRUE) else NA_real_,
+    file = path
   ) %>%
     mutate(
       accuracy = ifelse(is.nan(accuracy), NA_real_, accuracy),
@@ -168,7 +150,6 @@ read_one_eval_summary <- function(model_id, model, tag, dataset, window_mode) {
 }
 
 build_window_rows <- function(window_mode) {
-  
   purrr::pmap_dfr(freq_map, function(dataset, tag) {
     purrr::pmap_dfr(model_map, function(model_id, model) {
       read_one_eval_summary(
@@ -193,7 +174,6 @@ build_window_rows <- function(window_mode) {
 }
 
 build_weighted_averages <- function(rows) {
-  
   freq_sizes_from_results <- rows %>%
     group_by(dataset) %>%
     summarise(
@@ -201,25 +181,25 @@ build_weighted_averages <- function(rows) {
       .groups = "drop"
     ) %>%
     mutate(n = ifelse(is.infinite(n) | is.na(n) | n <= 0, NA_real_, n))
-  
+
   freq_sizes_default <- tibble::tribble(
-    ~dataset,     ~n_default,
-    "Yearly",     23000,
-    "Quarterly",  24000,
-    "Monthly",    48000,
-    "Weekly",       359,
-    "Daily",       4000,
-    "Hourly",       414
+    ~dataset, ~n_default,
+    "Yearly", 23000,
+    "Quarterly", 24000,
+    "Monthly", 48000,
+    "Weekly", 359,
+    "Daily", 4000,
+    "Hourly", 414
   )
-  
+
   freq_sizes <- freq_sizes_from_results %>%
     left_join(freq_sizes_default, by = "dataset") %>%
     mutate(n = ifelse(is.na(n), n_default, n)) %>%
     select(dataset, n)
-  
+
   message("Frequency sizes used for W.Avg:")
   print(freq_sizes)
-  
+
   rows %>%
     left_join(freq_sizes, by = "dataset") %>%
     group_by(model) %>%
@@ -232,67 +212,66 @@ build_weighted_averages <- function(rows) {
 }
 
 write_window_table <- function(window_mode, rows) {
-  
   out_window_dir <- file.path(out_dir, window_mode)
   dir.create(out_window_dir, recursive = TRUE, showWarnings = FALSE)
-  
+
   out_csv <- file.path(
     out_window_dir,
     "model_accuracy_macroF1_by_frequency.csv"
   )
-  
+
   out_csv_display <- file.path(
     out_window_dir,
     "model_accuracy_macroF1_by_frequency_display.csv"
   )
-  
+
   out_coverage_csv <- file.path(
     out_window_dir,
     "model_accuracy_macroF1_coverage.csv"
   )
-  
+
   rows_w <- build_weighted_averages(rows)
-  
+
   rows_all <- bind_rows(rows, rows_w) %>%
     mutate(dataset = factor(dataset, levels = c(freq_levels, "W. Avg.")))
-  
+
   wide_acc <- rows_all %>%
     select(model, dataset, accuracy) %>%
     tidyr::pivot_wider(names_from = dataset, values_from = accuracy) %>%
     rename_with(~ paste0(.x, "_acc"), -model)
-  
+
   wide_f1 <- rows_all %>%
     select(model, dataset, macro_f1) %>%
     tidyr::pivot_wider(names_from = dataset, values_from = macro_f1) %>%
     rename_with(~ paste0(.x, "_f1"), -model)
-  
+
   tbl_wide <- wide_acc %>%
     left_join(wide_f1, by = "model")
-  
+
   models_found <- unique(tbl_wide$model)
-  
+
   model_levels <- unique(c(
     model_levels_preferred,
     sort(setdiff(models_found, model_levels_preferred))
   ))
-  
+
   tbl_wide <- tbl_wide %>%
     mutate(model = factor(model, levels = model_levels)) %>%
     arrange(model) %>%
     mutate(model = as.character(model))
-  
+
   readr::write_csv(tbl_wide, out_csv)
-  
+
   tbl_display <- tbl_wide
-  
+
   for (j in seq_along(tbl_display)) {
     if (is.numeric(tbl_display[[j]])) {
       tbl_display[[j]] <- fmt3(tbl_display[[j]])
     }
   }
-  
+
   readr::write_csv(tbl_display, out_csv_display)
-  
+
   coverage <- rows %>%
     count(model, dataset, name = "present") %>%
     tidyr::pivot_wider(
@@ -301,38 +280,35 @@ write_window_table <- function(window_mode, rows) {
       values_fill = 0
     ) %>%
     arrange(model)
-  
+
   readr::write_csv(coverage, out_coverage_csv)
-  
+
   message("Saved numeric table to:  ", out_csv)
   message("Saved display table to:  ", out_csv_display)
   message("Saved coverage table to: ", out_coverage_csv)
-  
+
   print(tbl_display)
-  
+
   message("Coverage (1=present, 0=missing):")
   print(coverage)
-  
+
   invisible(tbl_wide)
 }
 
-# ---------------------------------------------------------------------
-# 3) Build one table per window mode
-# ---------------------------------------------------------------------
+# Build one table per window mode --------------------------------------------
 
 for (window_mode in window_modes) {
-  
   message("------------------------------------------------------------")
   message("Processing window_mode: ", window_mode)
   message("------------------------------------------------------------")
-  
+
   rows <- build_window_rows(window_mode)
-  
+
   if (nrow(rows) == 0L) {
     warning("No rows found for window_mode=", window_mode, ". Skipping.")
     next
   }
-  
+
   write_window_table(window_mode, rows)
 }
 

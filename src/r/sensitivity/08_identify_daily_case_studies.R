@@ -1,20 +1,25 @@
-# =====================================================================
+# ==============================================================================
 # 08_identify_daily_case_studies.R
-# Identify Daily real case studies for Chronos-MANTIS and SMYL-MANTIS
-# =====================================================================
+#
+# Purpose:
+#   Identify Daily case studies for the adjusted Chronos and SMYL forecasts.
+# Inputs:
+#   The Daily sensitivity dataset and reference adjustment parameters.
+# Outputs:
+#   Selected Daily case-study data under results/sensitivity.
+# Run from:
+#   Project root, directly or through 99_sensitivity_run_all.R.
+# ==============================================================================
 
 source("src/r/sensitivity/00_sensitivity_common.R")
-
 
 set_sensitivity_frequency("Daily")
 dataset <- read_sensitivity()
 
-# ---------------------------------------------------------------------
-# Local evaluation helpers
+# Local evaluation helpers ---------------------------------------------------
 #
 # These reproduce the exact metric and adjustment logic used in Script 05
 # without rerunning the lambda-sensitivity analysis.
-# ---------------------------------------------------------------------
 
 calc_smape <- function(actual, forecast) {
   mean(
@@ -24,7 +29,6 @@ calc_smape <- function(actual, forecast) {
   )
 }
 
-
 calc_mase <- function(x, actual, forecast, mase_freq = 1L) {
   denom <- mean(
     abs(
@@ -33,28 +37,26 @@ calc_mase <- function(x, actual, forecast, mase_freq = 1L) {
     ),
     na.rm = TRUE
   )
-  
+
   mean(
     abs(actual - forecast) / denom,
     na.rm = TRUE
   )
 }
 
-
 calc_da <- function(actual, forecast, last_x) {
   actual_direction <- as.integer(
     tail(actual, 1) > last_x
   )
-  
+
   forecast_direction <- as.integer(
     tail(forecast, 1) > last_x
   )
-  
+
   as.numeric(
     actual_direction == forecast_direction
   )
 }
-
 
 get_m4_mase_freq <- function(period) {
   dplyr::case_when(
@@ -65,25 +67,22 @@ get_m4_mase_freq <- function(period) {
   )
 }
 
-
 calc_series_metrics <- function(s, forecast) {
   x <- as.numeric(s$x)
   xx <- as.numeric(s$xx)
   last_x <- tail(x, 1)
-  
+
   tibble::tibble(
     smape = calc_smape(
       xx,
       forecast
     ),
-    
     mase = calc_mase(
       x = x,
       actual = xx,
       forecast = forecast,
       mase_freq = get_m4_mase_freq(s$period)
     ),
-    
     da = calc_da(
       xx,
       forecast,
@@ -92,19 +91,18 @@ calc_series_metrics <- function(s, forecast) {
   )
 }
 
-
 adjust_forecast <- function(
-    base_forecast,
-    last_x,
-    mantis_final,
-    lambda_up,
-    lambda_down) {
-  
+  base_forecast,
+  last_x,
+  mantis_final,
+  lambda_up,
+  lambda_down
+) {
   forecast_final_direction <- direction_label(
     tail(base_forecast, 1),
     last_x
   )
-  
+
   gamma <- dplyr::case_when(
     forecast_final_direction == mantis_final ~ 1,
     forecast_final_direction != mantis_final &
@@ -112,22 +110,11 @@ adjust_forecast <- function(
     forecast_final_direction != mantis_final &
       mantis_final == 0 ~ lambda_down
   )
-  
+
   gamma * base_forecast
 }
 
-
-
-
-
-
-
-
-
-
-# ---------------------------------------------------------------------
-# Best aggregate lambdas from sensitivity surface
-# ---------------------------------------------------------------------
+# Best aggregate lambdas from sensitivity surface ----------------------------
 
 surface <- readRDS(file.path(results_dir, "lambda_sensitivity_d.rds"))
 
@@ -144,21 +131,18 @@ best_chronos <- get_best_lambda("chronos_mantis")
 print(best_smyl)
 print(best_chronos)
 
-# ---------------------------------------------------------------------
-# Per-series diagnostic
-# ---------------------------------------------------------------------
+# Per-series diagnostic ------------------------------------------------------
 
 score_one_series <- function(s, model_name, lambda_up, lambda_down) {
-  
   x <- as.numeric(s$x)
   xx <- as.numeric(s$xx)
   last_x <- tail(x, 1)
-  
+
   base_forecast <- as.numeric(s$fct[[model_name]])
   mantis_final <- tail(as.integer(s$direction$mantis), 1)
   base_final <- direction_label(tail(base_forecast, 1), last_x)
   actual_final <- direction_label(tail(xx, 1), last_x)
-  
+
   adjusted <- adjust_forecast(
     base_forecast = base_forecast,
     last_x = last_x,
@@ -166,10 +150,10 @@ score_one_series <- function(s, model_name, lambda_up, lambda_down) {
     lambda_up = lambda_up,
     lambda_down = lambda_down
   )
-  
+
   base_metrics <- calc_series_metrics(s, base_forecast)
-  adj_metrics  <- calc_series_metrics(s, adjusted)
-  
+  adj_metrics <- calc_series_metrics(s, adjusted)
+
   tibble::tibble(
     st = as.character(s$st),
     local_id = s$local_id,
@@ -214,9 +198,7 @@ case_scores <- dplyr::bind_rows(
   score_model("chronos", best_chronos)
 )
 
-# ---------------------------------------------------------------------
-# Save full per-series ranking
-# ---------------------------------------------------------------------
+# Save full per-series ranking -----------------------------------------------
 
 out_dir <- file.path("results", "sensitivity", "paper", "case_studies")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
@@ -226,9 +208,7 @@ readr::write_csv(
   file.path(out_dir, "daily_case_study_scores_all.csv")
 )
 
-# ---------------------------------------------------------------------
-# Recommended candidates
-# ---------------------------------------------------------------------
+# Recommended candidates -----------------------------------------------------
 
 best_overall <- case_scores |>
   dplyr::filter(correction_type != "none") |>
@@ -250,8 +230,8 @@ best_down <- case_scores |>
   dplyr::ungroup()
 
 readr::write_csv(best_overall, file.path(out_dir, "daily_case_study_best_overall.csv"))
-readr::write_csv(best_up,      file.path(out_dir, "daily_case_study_best_up.csv"))
-readr::write_csv(best_down,    file.path(out_dir, "daily_case_study_best_down.csv"))
+readr::write_csv(best_up, file.path(out_dir, "daily_case_study_best_up.csv"))
+readr::write_csv(best_down, file.path(out_dir, "daily_case_study_best_down.csv"))
 
 cat("\nBest overall candidates:\n")
 print(best_overall |> dplyr::select(model, st, local_id, correction_type, mase_gain_pct, smape_gain_pct, base_da, adjusted_da) |> head(20))

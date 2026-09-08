@@ -1,7 +1,15 @@
-# =====================================================================
+# ==============================================================================
 # 09a_up_down_case_study_figures.R
-# Figure 1 candidates: upward and downward directional adjustments
-# =====================================================================
+#
+# Purpose:
+#   Create upward- and downward-adjustment case-study figures.
+# Inputs:
+#   Configured case-study series and frequency-specific sensitivity datasets.
+# Outputs:
+#   Case-study figures under results/sensitivity/paper/figures.
+# Run from:
+#   Project root, directly or through 99_sensitivity_run_all.R.
+# ==============================================================================
 
 library(dplyr)
 library(tidyr)
@@ -11,16 +19,14 @@ library(ggplot2)
 
 source("src/r/sensitivity/00_sensitivity_common.R")
 
-# ---------------------------------------------------------------------
-# Settings
-# ---------------------------------------------------------------------
+# Configuration --------------------------------------------------------------
 
 case_studies <- tibble::tribble(
-  ~period,  ~st,      ~base_model, ~panel_title,                     ~expected_adjustment, ~lambda_up, ~lambda_down,
-  "Daily",  "D2715",  "chronos",   "Chronos-2-Mantis: D2715",      "up",                  1.015,      1.000,
-  "Daily",  "D1602",  "smyl",      "SMYL-Mantis: D1602",           "up",                  1.015,      1.000,
-  "Weekly", "W39",    "chronos",   "Chronos-2-Mantis: W39",        "down",                1.015,      0.990,
-  "Weekly", "W82",    "smyl",      "SMYL-Mantis: W82",             "down",                1.015,      0.995
+  ~period, ~st, ~base_model, ~panel_title, ~expected_adjustment, ~lambda_up, ~lambda_down,
+  "Daily", "D2715", "chronos", "Chronos-2-Mantis: D2715", "up", 1.015, 1.000,
+  "Daily", "D1602", "smyl", "SMYL-Mantis: D1602", "up", 1.015, 1.000,
+  "Weekly", "W39", "chronos", "Chronos-2-Mantis: W39", "down", 1.015, 0.990,
+  "Weekly", "W82", "smyl", "SMYL-Mantis: W82", "down", 1.015, 0.995
 )
 
 recommended_panels <- c(
@@ -86,9 +92,7 @@ plot_series_labels <- c(
 forecast_origin_colour <- "#B3B3B3"
 secondary_colour <- "#D9D9D9"
 
-# ---------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------
+# Helper functions -----------------------------------------------------------
 
 direction_label_local <- function(value, last_x) {
   as.integer(value > last_x)
@@ -367,7 +371,7 @@ plot_one_case <- function(case_data, panel_title) {
   ) +
     geom_line(lineend = "round") +
     geom_point(
-      data = ~dplyr::filter(.x, series != "Observed data"),
+      data = ~ dplyr::filter(.x, series != "Observed data"),
       aes(shape = series),
       size = 1.65,
       stroke = 0.55
@@ -462,9 +466,7 @@ save_publication_plot <- function(plot, filename_stem, width, height) {
   invisible(output_files)
 }
 
-# ---------------------------------------------------------------------
-# Build and validate all four cases
-# ---------------------------------------------------------------------
+# Build and validate all four cases ------------------------------------------
 
 datasets <- setNames(
   lapply(unique(case_studies$period), read_period_dataset),
@@ -504,9 +506,7 @@ readr::write_csv(
 
 print(case_summary)
 
-# ---------------------------------------------------------------------
-# Save the four individual candidates
-# ---------------------------------------------------------------------
+# Save the four individual candidates ----------------------------------------
 
 for (i in seq_len(nrow(case_studies))) {
   case_row <- case_studies[i, ]
@@ -537,9 +537,7 @@ for (i in seq_len(nrow(case_studies))) {
   )
 }
 
-# ---------------------------------------------------------------------
-# Save recommended up/down two-panel Figure 1
-# ---------------------------------------------------------------------
+# Save recommended up/down two-panel Figure 1 --------------------------------
 
 recommended_data <- case_data[recommended_panels]
 combined_lines <- bind_rows(lapply(recommended_data, `[[`, "lines")) |>
@@ -560,7 +558,7 @@ combined_plot <-
   ) +
   geom_line(lineend = "round") +
   geom_point(
-    data = ~dplyr::filter(.x, series != "Observed data"),
+    data = ~ dplyr::filter(.x, series != "Observed data"),
     aes(shape = series),
     size = 1.55,
     stroke = 0.55

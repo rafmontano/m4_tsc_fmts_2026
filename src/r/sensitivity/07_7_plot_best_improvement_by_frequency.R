@@ -1,15 +1,21 @@
-# =====================================================================
+# ==============================================================================
 # 07_7_plot_best_improvement_by_frequency.R
-# Plot best directional-adjustment improvement by frequency
-# =====================================================================
+#
+# Purpose:
+#   Plot the best directional-adjustment improvement by frequency.
+# Inputs:
+#   The long-form sensitivity-surface RDS table.
+# Outputs:
+#   An improvement figure under results/sensitivity/paper/figures.
+# Run from:
+#   Project root, directly or through 07_8_run_all_paper_outputs.R.
+# ==============================================================================
 
 source("src/r/sensitivity/00_sensitivity_common.R")
 
 library(ggplot2)
 
-# ---------------------------------------------------------------------
-# Input / output
-# ---------------------------------------------------------------------
+# Input / output -------------------------------------------------------------
 
 table_dir <- file.path("results", "sensitivity", "paper", "tables")
 figure_dir <- file.path("results", "sensitivity", "paper", "figures")
@@ -18,9 +24,7 @@ dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
 
 surface <- readRDS(file.path(table_dir, "sensitivity_surface_long.rds"))
 
-# ---------------------------------------------------------------------
-# Best improvement per frequency and adjusted model
-# ---------------------------------------------------------------------
+# Best improvement per frequency and adjusted model --------------------------
 
 best_by_frequency <- surface |>
   dplyr::group_by(period, model_label) |>
@@ -38,9 +42,7 @@ best_by_frequency <- surface |>
   ) |>
   dplyr::arrange(period, model_label)
 
-# ---------------------------------------------------------------------
-# Save plotting dataset
-# ---------------------------------------------------------------------
+# Save plotting dataset ------------------------------------------------------
 
 out_csv <- file.path(table_dir, "sensitivity_best_by_frequency.csv")
 out_rds <- file.path(table_dir, "sensitivity_best_by_frequency.rds")
@@ -48,9 +50,7 @@ out_rds <- file.path(table_dir, "sensitivity_best_by_frequency.rds")
 readr::write_csv(best_by_frequency, out_csv)
 saveRDS(best_by_frequency, out_rds)
 
-# ---------------------------------------------------------------------
-# Plot
-# ---------------------------------------------------------------------
+# Plot -----------------------------------------------------------------------
 
 p <- ggplot(
   best_by_frequency,
@@ -81,9 +81,7 @@ p <- ggplot(
     axis.text.x = element_text(angle = 30, hjust = 1)
   )
 
-# ---------------------------------------------------------------------
-# Save
-# ---------------------------------------------------------------------
+# Save -----------------------------------------------------------------------
 
 out_pdf <- file.path(figure_dir, "04_best_improvement_by_frequency.pdf")
 out_png <- file.path(figure_dir, "04_best_improvement_by_frequency.png")

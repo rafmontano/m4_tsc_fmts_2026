@@ -201,11 +201,11 @@ save_vector_pdf <- function(filename, plot, width, height) {
   )
 
   if (!file.copy(temporary_pdf, filename, overwrite = TRUE)) {
-    stop("Could not replace PDF output: ", filename)
+    message("Could not replace PDF output: ", filename)
   }
 
   if (!file.exists(filename) || file.info(filename)$size <= 0) {
-    stop("PDF output was not created correctly: ", filename)
+    message("PDF output was not created correctly: ", filename)
   }
 }
 

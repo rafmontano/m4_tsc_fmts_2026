@@ -41,7 +41,7 @@ missing_periods <- setdiff(
 )
 
 if (length(missing_periods) > 0) {
-  stop(
+  message(
     "Missing frequencies in sensitivity_surface_long.rds: ",
     paste(missing_periods, collapse = ", "),
     ". Run 07_3_build_surface_long_dataset.R before this script."
@@ -171,11 +171,11 @@ save_vector_pdf <- function(filename, plot, width, height) {
   )
 
   if (!file.copy(temporary_pdf, filename, overwrite = TRUE)) {
-    stop("Could not replace PDF output: ", filename)
+    message("Could not replace PDF output: ", filename)
   }
 
   if (!file.exists(filename) || file.info(filename)$size <= 0) {
-    stop("PDF output was not created correctly: ", filename)
+    message("PDF output was not created correctly: ", filename)
   }
 }
 

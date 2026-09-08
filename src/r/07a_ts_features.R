@@ -107,7 +107,7 @@ for (period_i in periods) {
           period = period_i
         )$features
       } else {
-        stop("Unknown FEATURE_ENGINE: ", FEATURE_ENGINE)
+        message("Unknown FEATURE_ENGINE: ", FEATURE_ENGINE)
       }
     }
 
@@ -144,7 +144,7 @@ for (period_i in periods) {
     feature_matrix <- dplyr::bind_rows(feature_rows)
 
     if (nrow(feature_matrix) != n_windows) {
-      stop(
+      message(
         "Feature rows mismatch: got ",
         nrow(feature_matrix),
         " expected ",

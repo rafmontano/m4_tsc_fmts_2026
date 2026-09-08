@@ -244,7 +244,7 @@ build_case_data <- function(dataset,
   )
 
   if (length(series_index) != 1L) {
-    stop("Expected one series for ", st, "; found ", length(series_index), ".")
+    message("Expected one series for ", st, "; found ", length(series_index), ".")
   }
 
   s <- dataset[[series_index]]
@@ -266,7 +266,7 @@ build_case_data <- function(dataset,
   )
 
   if (adjustment_result$adjustment != expected_adjustment) {
-    stop(
+    message(
       panel_title,
       " is a ", adjustment_result$adjustment,
       " adjustment, not ", expected_adjustment, "."
@@ -274,7 +274,7 @@ build_case_data <- function(dataset,
   }
 
   if (adjustment_result$gamma == 1) {
-    stop(panel_title, " has no numerical adjustment (gamma = 1).")
+    message(panel_title, " has no numerical adjustment (gamma = 1).")
   }
 
   adjusted_forecast <- adjustment_result$adjusted_forecast

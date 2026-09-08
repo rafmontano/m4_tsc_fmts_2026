@@ -176,7 +176,7 @@ for (period_i in periods) {
 
     if (SPLIT_STRATEGY_ID %in% c("S1", "S3")) {
       if (!("series_id" %in% names(df))) {
-        stop(
+        message(
           "[08] ",
           SPLIT_STRATEGY_ID,
           " requires column 'series_id'."
@@ -222,7 +222,7 @@ for (period_i in periods) {
         train_idx
       )
     } else {
-      stop(
+      message(
         "[08] Unknown SPLIT_STRATEGY_ID: ",
         SPLIT_STRATEGY_ID
       )

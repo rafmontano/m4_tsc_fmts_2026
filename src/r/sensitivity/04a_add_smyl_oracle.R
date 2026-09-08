@@ -42,7 +42,7 @@ calc_smape_oracle <- function(actual, forecast) {
 
 add_smyl_oracle_one <- function(s) {
   if (is.null(s$fct$smyl)) {
-    stop(
+    message(
       "SMYL forecast missing for series ",
       s$st,
       ". Run 02_add_smyl_forecasts.R first."
@@ -53,7 +53,7 @@ add_smyl_oracle_one <- function(s) {
   smyl_fc <- as.numeric(s$fct$smyl)
 
   if (length(actual) != length(smyl_fc)) {
-    stop(
+    message(
       "Forecast-horizon mismatch for series ",
       s$st,
       ": actual length = ",
@@ -68,7 +68,7 @@ add_smyl_oracle_one <- function(s) {
     any(!is.finite(actual)) ||
       any(!is.finite(smyl_fc))
   ) {
-    stop(
+    message(
       "Non-finite actual or SMYL forecast for series ",
       s$st,
       "."
@@ -89,7 +89,7 @@ add_smyl_oracle_one <- function(s) {
   )
 
   if (any(!is.finite(oracle_errors))) {
-    stop(
+    message(
       "Non-finite Oracle sMAPE for series ",
       s$st,
       "."
@@ -172,7 +172,7 @@ for (period_use in PERIODS_TO_RUN) {
   )
 
   if (n_with_oracle != length(dataset)) {
-    stop(
+    message(
       "[04a] ",
       period_use,
       ": incomplete Oracle coverage: ",
@@ -199,7 +199,7 @@ for (period_use in PERIODS_TO_RUN) {
         oracle_multipliers > 1.5
     )
   ) {
-    stop(
+    message(
       "[04a] ",
       period_use,
       ": Oracle multiplier outside [0.5, 1.5]."

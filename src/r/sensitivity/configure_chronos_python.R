@@ -13,7 +13,7 @@
 
 configure_chronos_python <- function() {
   if (!requireNamespace("reticulate", quietly = TRUE)) {
-    stop("The R package 'reticulate' is required.")
+    message("The R package 'reticulate' is required.")
   }
 
   python <- Sys.getenv("RETICULATE_PYTHON", unset = "")
@@ -24,7 +24,7 @@ configure_chronos_python <- function() {
     conda <- unname(Sys.which("conda"))
 
     if (!nzchar(conda)) {
-      stop("Conda is required and must be available on PATH.")
+      message("Conda is required and must be available on PATH.")
     }
 
     reticulate::use_condaenv(

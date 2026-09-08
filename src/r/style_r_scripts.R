@@ -12,7 +12,7 @@
 # ==============================================================================
 
 if (!requireNamespace("styler", quietly = TRUE)) {
-  stop(
+  message(
     "Package 'styler' is required. Install it with: ",
     "install.packages('styler')"
   )

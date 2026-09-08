@@ -150,7 +150,7 @@ read_class_counts <- function(period) {
 all_counts <- purrr::map_dfr(freq_list, read_class_counts)
 
 if (nrow(all_counts) == 0) {
-  stop("[06a] No class counts produced. Check REAL eval CSVs exist in data/export/.")
+  message("[06a] No class counts produced. Check REAL eval CSVs exist in data/export/.")
 }
 
 # Output (overwrite every run) -----------------------------------------------

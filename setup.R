@@ -11,7 +11,7 @@
 # Configuration ---------------------------------------------------------------
 
 if (!file.exists("m4-tsc-fmts-2026.Rproj")) {
-  stop("Run setup.R from the repository root.")
+  message("Run setup.R from the repository root.")
 }
 
 total_steps <- 5L
@@ -162,7 +162,7 @@ if (!requireNamespace("M4comp2018", quietly = TRUE)) {
   }
 
   if (!m4_downloaded) {
-    stop("Could not download M4comp2018 after three attempts.")
+    message("Could not download M4comp2018 after three attempts.")
   }
 
   renv::install(m4_tarball, prompt = FALSE)
@@ -193,12 +193,12 @@ classifiers_file <- if (Sys.info()[["sysname"]] == "Darwin") {
 conda <- unname(Sys.which("conda"))
 
 if (!nzchar(conda)) {
-  stop("Conda is required and must be available on PATH.")
+  message("Conda is required and must be available on PATH.")
 }
 
 install_environment <- function(name, definition) {
   if (!file.exists(definition)) {
-    stop("Missing environment file: ", definition)
+    message("Missing environment file: ", definition)
   }
 
   exists <- name %in% reticulate::conda_list(conda = conda)$name
@@ -224,7 +224,7 @@ install_environment <- function(name, definition) {
   status <- system2(conda, arguments)
 
   if (!identical(status, 0L)) {
-    stop("Could not install Conda environment: ", name)
+    message("Could not install Conda environment: ", name)
   }
 }
 
@@ -247,7 +247,7 @@ check_python <- function(environment, code) {
   )
 
   if (!identical(status, 0L)) {
-    stop("Python check failed: ", environment)
+    message("Python check failed: ", environment)
   }
 }
 

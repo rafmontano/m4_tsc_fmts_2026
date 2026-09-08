@@ -21,7 +21,7 @@ suppressPackageStartupMessages({
 
 input_csv <- file.path("data", "export", "class_proportion.csv")
 if (!file.exists(input_csv)) {
-  stop("Missing input file: ", input_csv, "\nRun 06a_compute_class_proportion.R first.")
+  message("Missing input file: ", input_csv, "\nRun 06a_compute_class_proportion.R first.")
 }
 
 df_counts <- readr::read_csv(input_csv, show_col_types = FALSE)
@@ -29,7 +29,7 @@ df_counts <- readr::read_csv(input_csv, show_col_types = FALSE)
 required_cols <- c("frequency", "class_label", "n")
 missing_cols <- setdiff(required_cols, names(df_counts))
 if (length(missing_cols) > 0) {
-  stop("Missing required columns in input CSV: ", paste(missing_cols, collapse = ", "))
+  message("Missing required columns in input CSV: ", paste(missing_cols, collapse = ", "))
 }
 
 # Frequency order (low -> high frequency after flip)

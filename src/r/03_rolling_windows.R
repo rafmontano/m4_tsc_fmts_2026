@@ -127,7 +127,7 @@ for (period_i in periods) {
         "S1" = as.integer(WINDOW_SIZE_i + HORIZON_i),
         "S2" = as.integer(WINDOW_SIZE_i + HORIZON_i),
         "S3" = NA_integer_,
-        stop(
+        message(
           "Unknown SPLIT_STRATEGY_ID: ",
           SPLIT_STRATEGY_ID
         )

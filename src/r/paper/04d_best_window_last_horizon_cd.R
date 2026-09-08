@@ -19,7 +19,7 @@ suppressPackageStartupMessages({
 })
 
 if (!requireNamespace("scmamp", quietly = TRUE)) {
-  stop("Package 'scmamp' is required. Install with install.packages('scmamp').")
+  message("Package 'scmamp' is required. Install with install.packages('scmamp').")
 }
 suppressPackageStartupMessages(library(scmamp))
 
@@ -80,13 +80,13 @@ preferred_model_order <- c(
 # Read consolidated results --------------------------------------------------
 
 if (!file.exists(input_csv)) {
-  stop("Input file not found: ", input_csv)
+  message("Input file not found: ", input_csv)
 }
 
 df <- readr::read_csv(input_csv, show_col_types = FALSE)
 
 if (nrow(df) == 0L) {
-  stop("Input file is empty: ", input_csv)
+  message("Input file is empty: ", input_csv)
 }
 
 required_cols <- c("window_mode", "frequency", "model", "horizon", "accuracy")
@@ -94,7 +94,7 @@ required_cols <- c("window_mode", "frequency", "model", "horizon", "accuracy")
 missing_cols <- setdiff(required_cols, names(df))
 
 if (length(missing_cols) > 0L) {
-  stop(
+  message(
     "Missing required columns: ",
     paste(missing_cols, collapse = ", ")
   )

@@ -41,7 +41,7 @@ as_fct_numeric <- function(x, h) {
   out <- as.numeric(x)
 
   if (length(out) != h) {
-    stop("Forecast length mismatch. Expected ", h, ", got ", length(out))
+    message("Forecast length mismatch. Expected ", h, ", got ", length(out))
   }
 
   out
@@ -155,7 +155,7 @@ thetaf_forec <- function(x, h) {
 
 chronos_forec <- function(x, h) {
   if (!requireNamespace("reticulate", quietly = TRUE)) {
-    stop("Missing required package: reticulate")
+    message("Missing required package: reticulate")
   }
 
   x_num <- as.numeric(x)

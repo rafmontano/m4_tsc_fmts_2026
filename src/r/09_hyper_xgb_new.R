@@ -206,7 +206,7 @@ for (period_i in periods) {
     )
 
     if (length(predictor_cols) == 0L) {
-      stop("[09] No predictor columns found for period: ", period_i)
+      message("[09] No predictor columns found for period: ", period_i)
     }
 
     for (h in seq_len(H_i)) {

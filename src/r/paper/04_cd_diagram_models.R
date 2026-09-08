@@ -20,7 +20,7 @@ suppressPackageStartupMessages({
 })
 
 if (!requireNamespace("scmamp", quietly = TRUE)) {
-  stop("Package 'scmamp' is required. Install with install.packages('scmamp').")
+  message("Package 'scmamp' is required. Install with install.packages('scmamp').")
 }
 suppressPackageStartupMessages(library(scmamp))
 

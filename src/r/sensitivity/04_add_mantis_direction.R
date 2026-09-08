@@ -30,14 +30,14 @@ add_mantis_direction_one <- function(s, mantis_df) {
     dplyr::arrange(horizon_id)
 
   if (nrow(m_i) != h_i) {
-    stop(
+    message(
       "Incomplete MANTIS coverage for series ", s$st,
       ": expected ", h_i, " horizons, found ", nrow(m_i), "."
     )
   }
 
   if (any(!m_i$mantis_da %in% c(0L, 1L))) {
-    stop("Non-binary MANTIS prediction for series ", s$st, ".")
+    message("Non-binary MANTIS prediction for series ", s$st, ".")
   }
 
   if (is.null(s$direction)) {

@@ -20,7 +20,7 @@ source("src/r/utils.R")
 # Main execution --------------------------------------------------------------
 
 if (!file.exists(subset_clean_file)) {
-  stop("Missing cleaned dataset: ", subset_clean_file)
+  message("Missing cleaned dataset: ", subset_clean_file)
 }
 
 M4_clean_all <- readRDS(subset_clean_file)

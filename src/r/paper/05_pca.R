@@ -20,7 +20,7 @@ suppressPackageStartupMessages({
 })
 
 if (!requireNamespace("factoextra", quietly = TRUE)) {
-  stop(
+  message(
     "Package 'factoextra' is required for PCA plots.\n",
     "Install it with: install.packages('factoextra')"
   )

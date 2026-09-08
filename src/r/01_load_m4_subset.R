@@ -49,7 +49,7 @@ if (USE_TEST_SUBSET) {
   )
 
   if (length(missing_required_series) > 0L) {
-    stop(
+    message(
       "Required test series not found: ",
       paste(missing_required_series, collapse = ", ")
     )

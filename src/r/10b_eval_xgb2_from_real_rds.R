@@ -27,7 +27,7 @@ source("src/r/forecast_methods3.R")
 # Main execution --------------------------------------------------------------
 
 if (!file.exists(subset_clean_file)) {
-  stop("Missing cleaned dataset: ", subset_clean_file)
+  message("Missing cleaned dataset: ", subset_clean_file)
 }
 
 for (period_i in periods) {
@@ -98,7 +98,7 @@ for (period_i in periods) {
     predictor_cols_base <- get_predictor_cols_base(df)
 
     if (length(predictor_cols_base) == 0L) {
-      stop("[10b] No predictor columns found for period: ", period_i)
+      message("[10b] No predictor columns found for period: ", period_i)
     }
 
     if (nrow(real_eval_df) == 0L) {

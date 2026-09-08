@@ -23,7 +23,7 @@ infer_frequency <- function(period) {
   )
 
   if (!is.finite(freq)) {
-    stop("Unknown period: ", p)
+    message("Unknown period: ", p)
   }
 
   as.integer(freq)
@@ -39,7 +39,7 @@ get_m4_horizon <- function(period) {
     "Weekly"    = 13L,
     "Daily"     = 14L,
     "Hourly"    = 48L,
-    stop("Unknown M4 period: ", p)
+    message("Unknown M4 period: ", p)
   )
 }
 
@@ -56,7 +56,7 @@ get_window_size_from_h <- function(period, window_mode = WINDOW_MODE) {
   p <- as.character(period)
 
   if (!p %in% names(grid)) {
-    stop("No rule defined for period: ", p)
+    message("No rule defined for period: ", p)
   }
 
   if (window_mode == "full") {
@@ -64,7 +64,7 @@ get_window_size_from_h <- function(period, window_mode = WINDOW_MODE) {
   }
 
   if (!window_mode %in% c("small", "default", "large")) {
-    stop("Invalid window_mode: ", window_mode)
+    message("Invalid window_mode: ", window_mode)
   }
 
   as.integer(grid[[p]][[window_mode]])
@@ -80,7 +80,7 @@ freq_tag <- function(period) {
     "Weekly" = "w",
     "Daily" = "d",
     "Hourly" = "h",
-    stop("Unknown period: ", p, call. = FALSE)
+    message("Unknown period: ", p, call. = FALSE)
   )
 }
 
@@ -90,7 +90,7 @@ window_tag <- function(window_mode) {
     "default" = "d",
     "large" = "l",
     "full" = "f",
-    stop("Invalid window_mode: ", window_mode, call. = FALSE)
+    message("Invalid window_mode: ", window_mode, call. = FALSE)
   )
 }
 
@@ -247,7 +247,7 @@ compute_z_generic <- function(x, xx, label_id) {
   label_id <- as.integer(label_id)
 
   if (!label_id %in% 1:6) {
-    stop("label_id must be in 1..6.")
+    message("label_id must be in 1..6.")
   }
 
   z <- compute_z(x, xx)

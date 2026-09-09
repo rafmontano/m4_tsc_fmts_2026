@@ -21,7 +21,7 @@ periods <- c("Weekly", "Hourly", "Daily", "Yearly", "Quarterly", "Monthly")
 RUN_PARALLEL <- TRUE
 FORCE_RERUN <-  TRUE
 RUN_CLEAN <- TRUE
-USE_TEST_SUBSET <- TRUE
+USE_TEST_SUBSET <- FALSE
 TEST_SERIES_PER_PERIOD <- 10L
 
 FEATURE_ENGINE <- "da"

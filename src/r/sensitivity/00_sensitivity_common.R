@@ -28,7 +28,7 @@ PERIODS_TO_RUN <- c(
 
 # Test subset -----------------------------------------------------------------
 
-USE_TEST_SUBSET <- TRUE
+USE_TEST_SUBSET <- FALSE
 TEST_SERIES_PER_PERIOD <- 10L
 
 # Official M4 frequency metadata.

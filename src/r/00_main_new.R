@@ -54,7 +54,7 @@ cleanup_step()
 
 # 02: Clean M4 ----------------------------------------------------------------
 
-set_parallel_plan(TRUE)
+set_parallel_plan(FALSE)
 
 if (!file.exists(subset_clean_file) || FORCE_RERUN) {
   cat("\n[02] Cleaning M4 dataset...\n")

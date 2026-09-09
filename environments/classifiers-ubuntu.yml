@@ -1,0 +1,16 @@
+name: m4_fmts_classifiers
+channels:
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - joblib==1.5.2
+      - numba==0.61.2
+      - numpy==2.0.2
+      - pandas==2.3.3
+      - rdata==1.0.0
+      - rpy2==3.5.17
+      - scikit-learn==1.7.2
+      - sktime==0.40.1
+      - tensorflow==2.18.1

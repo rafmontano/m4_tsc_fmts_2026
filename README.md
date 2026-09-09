@@ -75,13 +75,13 @@ Figure 3 illustrates how a learned directional signal complements an existing po
 
 ## Installation
 
-The project requires R, Conda, Git, and an internet connection for the initial package and model downloads. Run all commands from a terminal. The current environment definitions support macOS on Apple silicon; Ubuntu 24.04 validation is tracked separately.
+The project requires R, Conda, Git, and an internet connection for the initial package and model downloads. Run all commands from a terminal. The environment definitions support macOS on Apple silicon and Ubuntu 24.04.
 
 Clone the repository and run the single setup script:
 
 ``` bash
-git clone https://github.com/rafmontano/m4-tsc-fmts-2026.git
-cd m4-tsc-fmts-2026
+git clone https://github.com/rafmontano/m4_tsc_fmts_2026.git m4_tsc_fmts_2026
+cd m4_tsc_fmts_2026
 Rscript --vanilla setup.R
 ```
 
@@ -99,7 +99,7 @@ Setup completed successfully.
 Manual `conda activate` commands are not required. Conda may display activation instructions while creating an environment, but those instructions are optional for this project.
 
 | Workload | Environment selection |
-|----|----|
+|------------------------------------|------------------------------------|
 | R data preparation, modelling, and reporting | R loads the project-local `renv` library. |
 | Chronos-2 calls made from R | `reticulate` selects `m4_fmts_foundation` automatically. |
 | Chronos-2 and Mantis Python runners | The command uses `conda run -n m4_fmts_foundation`. |
@@ -109,31 +109,22 @@ This explicit selection keeps the environments separate without requiring the re
 
 ## Running the project
 
-Run these commands from the repository root. The full experiment is computationally intensive.
-
-Prepare the M4 data and run the R models:
+Run the complete experiment and generate the paper results from the repository root:
 
 ``` bash
-Rscript src/r/00_main_new.R
+./run_paper_results.sh
 ```
 
-Run the reported Python classifiers across all frequencies and window settings:
+The script runs six phases in sequence:
 
-``` bash
-conda run -n m4_fmts_classifiers python -c "from src.python import run_tsc_experiment as r; r.FREQ_TAGS=['w','h','d','y','q','m']; r.MODEL_ID=['RotF','ROCKET','InceptionTime']; r.WINDOW_MODES=['small','default','large','full']; r.main()"
-```
+1.  R data preparation, modelling, and evaluation.
+2.  Rotation Forest, ROCKET, and InceptionTime.
+3.  Mantis.
+4.  Chronos-2.
+5.  Sensitivity analysis.
+6.  Paper tables and figures.
 
-Run Mantis:
-
-``` bash
-conda run -n m4_fmts_foundation python -m src.python.run_mantis_experiment
-```
-
-Generate the Chronos-2 forecasts, directional-adjustment analysis, tables, and figures:
-
-``` bash
-Rscript src/r/sensitivity/99_sensitivity_run_all.R
-```
+The full experiment is computationally intensive. The script displays the active phase and records the duration of each phase and the complete pipeline in `results/runtime_<timestamp>.tsv`. Generated data, fitted models, results, and runtime records remain local and are excluded from version control.
 
 ## Reproducibility scope
 

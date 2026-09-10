@@ -1,0 +1,91 @@
+./run_paper_results.sh 
+[1/6] R pipeline
+
+====================
+   M4-XGB Pipeline
+====================
+
+Parameters:
+  periods           = Weekly, Hourly, Daily, Yearly, Quarterly, Monthly 
+  RUN_PARALLEL      = TRUE 
+  FORCE_RERUN       = FALSE 
+  RUN_CLEAN         = FALSE 
+  SPLIT_STRATEGY_ID = S1 
+  SPLIT_SEED        = 123 
+  TRAIN_FRAC        = 0.8 
+  DTW_WINDOW_FRAC   = 0.1 
+
+[01] Skipped (already exists): data/M4_subset.rds
+          used (Mb) gc trigger  (Mb) max used  (Mb)
+Ncells 1725240 92.2    3334668 178.1  2369988 126.6
+Vcells 3042898 23.3    8388608  64.0  4940817  37.7
+
+[02] Skipped (already exists): data/M4_subset_clean.rds
+          used (Mb) gc trigger  (Mb) max used  (Mb)
+Ncells 1732021 92.5    3334668 178.1  2369988 126.6
+Vcells 3059258 23.4    8388608  64.0  4940817  37.7
+
+[03] Skipped (all rolling window files exist)
+          used (Mb) gc trigger  (Mb) max used  (Mb)
+Ncells 1732217 92.6    3334668 178.1  2369988 126.6
+Vcells 3059813 23.4    8388608  64.0  4940817  37.7
+Parallel workers: 16
+
+[04] Skipped (all transformed files exist)
+          used (Mb) gc trigger  (Mb) max used  (Mb)
+Ncells 1799335 96.1    3334668 178.1  2369988 126.6
+Vcells 3187909 24.4    8388608  64.0  5331528  40.7
+Parallel workers: 16
+
+[06] Skipped (all labeled files exist)
+          used (Mb) gc trigger  (Mb) max used  (Mb)
+Ncells 1807162 96.6    3334668 178.1  2369988 126.6
+Vcells 3204336 24.5    8388608  64.0  5390046  41.2
+
+[07] Computing tsfeatures...
+
+[07a] Period = Weekly | window_mode = default | windows = 4607 | feature_engine = da 
+Registered S3 method overwritten by 'quantmod':
+  method            from
+  as.zoo.data.frame zoo 
+Final dataset: 4607 rows x 55 cols
+Saved → data/all_windows_with_features_w_d.rds 
+
+[07a] Period = Hourly | window_mode = default | windows = 1073 | feature_engine = da 
+ Final dataset: 1073 rows x 55 cols
+Saved → data/all_windows_with_features_h_d.rds 
+
+[07a] Period = Daily | window_mode = default | windows = 125255 | feature_engine = da 
+Error in ar.burg.default(x, aic = aic, order.max = order.max, na.action = na.action,  : 
+  zero-variance series
+In addition: There were 50 or more warnings (use warnings() to see the first 50)
+Error in ar.burg.default(x, aic = aic, order.max = order.max, na.action = na.action,  : 
+  zero-variance series
+In addition: Warning messages:
+1: In .f(.x[[i]], ...) : Error in unitroot_pp
+2: In tsfeatures(x, features = c("acf_features", "arch_stat", "crossing_points",  :
+  Some series are constant and cannot be scaled, so scaling has been disabled (`scale = FALSE`).
+Error in ar.burg.default(x, aic = aic, order.max = order.max, na.action = na.action,  : 
+  zero-variance series
+In addition: Warning messages:
+1: In .f(.x[[i]], ...) : Error in unitroot_pp
+2: In tsfeatures(x, features = c("acf_features", "arch_stat", "crossing_points",  :
+  Some series are constant and cannot be scaled, so scaling has been disabled (`scale = FALSE`).
+Error in ar.burg.default(x, aic = aic, order.max = order.max, na.action = na.action,  : 
+  zero-variance series
+In addition: Warning messages:
+1: In .f(.x[[i]], ...) : Error in unitroot_pp
+2: In summary.lm(fit) : essentially perfect fit: summary may be unreliable
+3: In summary.lm(fit) : essentially perfect fit: summary may be unreliable
+4: In .f(.x[[i]], ...) : Error in unitroot_pp
+5: In tsfeatures(x, features = c("acf_features", "arch_stat", "crossing_points",  :
+  Some series are constant and cannot be scaled, so scaling has been disabled (`scale = FALSE`).
+Error in ar.burg.default(x, aic = aic, order.max = order.max, na.action = na.action,  : 
+  zero-variance series
+In addition: Warning messages:
+1: In .f(.x[[i]], ...) : Error in unitroot_pp
+2: In tsfeatures(x, features = c("acf_features", "arch_stat", "crossing_points",  :
+  Some series are constant and cannot be scaled, so scaling has been disabled (`scale = FALSE`).
+
+
+

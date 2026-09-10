@@ -47,6 +47,7 @@ M4_FREQUENCY_INFO <- tibble::tribble(
 # Parallel execution ---------------------------------------------------------
 
 RUN_PARALLEL <- TRUE
+MAX_WORKERS <- 8L
 
 available_cores <- parallel::detectCores(logical = FALSE)
 
@@ -58,14 +59,7 @@ if (length(available_cores) != 1L || is.na(available_cores)) {
 # own Chronos-2 model instance. Since all workers share one GPU, use a
 # conservative cap rather than scaling workers with all CPU cores.
 
-if (USE_TEST_SUBSET) {
-  CHRONOS_WORKERS <- 1L
-} else {
-  CHRONOS_WORKERS <- min(
-    16L,
-    max(1L, as.integer(available_cores) - 1L)
-  )
-}
+CHRONOS_WORKERS <- 1L
 
 options(
   future.globals.maxSize = 4 * 1024^3

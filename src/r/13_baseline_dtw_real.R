@@ -149,8 +149,6 @@ for (period_i in periods) {
 
     # Compute the nearest neighbour once per real series.
 
-    idx_real <- seq_along(real_series)
-
     nn_cache_dir <- file.path(
       results_dtw_dir,
       "cache",
@@ -160,14 +158,20 @@ for (period_i in periods) {
     nearest_train_idx <- tryCatch(
       {
         preds <- run_step_parallel(
-          dataset = idx_real,
-          step_fun = function(i) {
+          dataset = real_series,
+          step_fun = function(
+            x_target,
+            train_series,
+            w_base
+          ) {
             find_nearest_dtw_index(
-              x_target = real_series[[i]],
+              x_target = x_target,
               train_series = train_series,
-              w_base = dtw_window_base
+              w_base = w_base
             )
           },
+          train_series = train_series,
+          w_base = dtw_window_base,
           chunk_size = NULL,
           save_foldername = nn_cache_dir,
           step_name = paste0("dtw_nn_", TAG_i, "_", WINDOW_TAG_i)
@@ -183,10 +187,10 @@ for (period_i in periods) {
         )
 
         vapply(
-          idx_real,
-          function(i) {
+          real_series,
+          function(x_target) {
             find_nearest_dtw_index(
-              x_target = real_series[[i]],
+              x_target = x_target,
               train_series = train_series,
               w_base = dtw_window_base
             )
@@ -304,7 +308,6 @@ for (period_i in periods) {
       real_df,
       train_series,
       real_series,
-      idx_real,
       nearest_train_idx,
       H_i,
       summary_real_rows,

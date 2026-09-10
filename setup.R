@@ -98,7 +98,7 @@ r_packages <- c(
   "future", "future.apply", "ggplot2", "ggpubr", "memoise", "purrr",
   "RANN", "ragg", "readr", "reticulate", "rBayesianOptimization",
   "scales", "stringr", "svglite", "tibble", "tidyr", "tidyverse",
-  "tsfeatures", "xgboost"
+  "tsfeatures", "xgboost", "doParallel", "foreach", "parallel"
 )
 
 missing_r_packages <- r_packages[

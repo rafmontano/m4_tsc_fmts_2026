@@ -178,7 +178,17 @@ for (period_i in periods) {
       dataset = base_rows,
       step_fun = compute_one_row,
       chunk_size = 2000L,
-      save_foldername = file.path(data_dir, paste0("cache_real_", TAG_i, "_", WINDOW_TAG_i)),
+      save_foldername = file.path(
+        data_dir,
+        paste0(
+          "cache_real_",
+          FEATURE_ENGINE,
+          "_",
+          TAG_i,
+          "_",
+          WINDOW_TAG_i
+        )
+      ),
       step_name = paste0("real_features_", TAG_i, "_", WINDOW_TAG_i)
     )
 

@@ -11,6 +11,10 @@
 
 # Dependencies ----------------------------------------------------------------
 
+library(parallel)
+library(foreach)
+library(doParallel)
+
 source("src/r/features.R")
 source("src/r/forecast_methods3.R")
 
@@ -111,23 +115,118 @@ for (period_i in periods) {
       }
     }
 
-    if (RUN_PARALLEL) {
-      set_parallel_plan(FALSE)
-      set_parallel_plan(TRUE)
+    if (isTRUE(RUN_PARALLEL)) {
+      chunk_size <- 5000L
+      all_indices <- seq_len(n_windows)
+      chunk_ids <- ceiling(all_indices / chunk_size)
+      n_chunks <- max(chunk_ids)
 
-      feature_rows <- run_step_parallel(
-        dataset = working_dataset,
-        step_fun = compute_one_feature_row,
-        chunk_size = 5000L,
-        save_foldername = features_cache_dir,
-        step_name = paste0(
-          "features_",
-          FEATURE_ENGINE,
-          "_",
-          TAG_i,
-          "_",
-          WINDOW_TAG_i
+      if (!dir.exists(features_cache_dir)) {
+        dir.create(
+          features_cache_dir,
+          recursive = TRUE,
+          showWarnings = FALSE
         )
+      }
+
+      chunk_feature_files <- file.path(
+        features_cache_dir,
+        sprintf("chunk_%03d.rds", seq_len(n_chunks))
+      )
+
+      n_workers <- autodetect_num_workers()
+
+      cat(
+        "[07a] Using PSOCK cluster with",
+        n_workers,
+        "workers and",
+        n_chunks,
+        "chunks\n"
+      )
+
+      cl <- parallel::makeCluster(
+        n_workers,
+        type = "PSOCK"
+      )
+      doParallel::registerDoParallel(cl)
+
+      feature_rows <- tryCatch(
+        {
+          parallel::clusterEvalQ(
+            cl,
+            {
+              source("src/r/utils.R")
+              source("src/r/features.R")
+              source("src/r/forecast_methods3.R")
+              NULL
+            }
+          )
+
+          for (chunk_id in seq_len(n_chunks)) {
+            chunk_file <- chunk_feature_files[chunk_id]
+
+            if (file.exists(chunk_file)) {
+              cat(
+                "[07a] Chunk",
+                chunk_id,
+                "of",
+                n_chunks,
+                "already exists; skipping\n"
+              )
+              next
+            }
+
+            idx <- which(chunk_ids == chunk_id)
+
+            cat(
+              "[07a] Processing chunk",
+              chunk_id,
+              "of",
+              n_chunks,
+              "with",
+              length(idx),
+              "windows\n"
+            )
+
+            chunk_rows <- foreach::foreach(
+              obj = working_dataset[idx],
+              .inorder = TRUE,
+              .packages = c(
+                "tsfeatures",
+                "forecast",
+                "tibble"
+              )
+            ) %dopar% {
+              compute_one_feature_row(obj)
+            }
+
+            saveRDS(chunk_rows, chunk_file)
+
+            cat(
+              "[07a] Saved chunk",
+              chunk_id,
+              "of",
+              n_chunks,
+              "→",
+              chunk_file,
+              "\n"
+            )
+
+            rm(chunk_rows)
+            gc()
+          }
+
+          chunk_rows <- lapply(
+            chunk_feature_files,
+            readRDS
+          )
+
+          do.call(c, chunk_rows)
+        },
+        finally = {
+          parallel::stopCluster(cl)
+          foreach::registerDoSEQ()
+        }
       )
     } else {
       feature_rows <- lapply(

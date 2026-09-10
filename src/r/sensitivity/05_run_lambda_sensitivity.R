@@ -108,31 +108,38 @@ evaluate_base_model <- function(dataset, model_name) {
 
 # Lambda sensitivity worker --------------------------------------------------
 
-evaluate_lambda_pair <- function(lambda_row) {
+evaluate_lambda_pair <- function(
+  lambda_row,
+  sensitivity_dataset,
+  model_name
+) {
   lambda_up <- lambda_row$lambda_up
   lambda_down <- lambda_row$lambda_down
 
-  metrics_j <- purrr::map_dfr(SENS_DATASET, function(s) {
-    x <- as.numeric(s$x)
-    last_x <- tail(x, 1)
+  metrics_j <- purrr::map_dfr(
+    sensitivity_dataset,
+    function(s) {
+      x <- as.numeric(s$x)
+      last_x <- tail(x, 1)
 
-    base_forecast <- as.numeric(s$fct[[SENS_MODEL]])
-    mantis_final <- tail(as.integer(s$direction$mantis), 1)
+      base_forecast <- as.numeric(s$fct[[model_name]])
+      mantis_final <- tail(as.integer(s$direction$mantis), 1)
 
-    adjusted <- adjust_forecast(
-      base_forecast = base_forecast,
-      last_x = last_x,
-      mantis_final = mantis_final,
-      lambda_up = lambda_up,
-      lambda_down = lambda_down
-    )
+      adjusted <- adjust_forecast(
+        base_forecast = base_forecast,
+        last_x = last_x,
+        mantis_final = mantis_final,
+        lambda_up = lambda_up,
+        lambda_down = lambda_down
+      )
 
-    calc_series_metrics(s, adjusted)
-  })
+      calc_series_metrics(s, adjusted)
+    }
+  )
 
   dplyr::summarise(
     metrics_j,
-    model_id = paste0(SENS_MODEL, "_mantis"),
+    model_id = paste0(model_name, "_mantis"),
     lambda_up = lambda_up,
     lambda_down = lambda_down,
     smape = mean(smape, na.rm = TRUE),
@@ -145,32 +152,37 @@ evaluate_lambda_pair <- function(lambda_row) {
 evaluate_sensitivity_model <- function(dataset, model_name) {
   jobs <- split(lambda_surface, seq_len(nrow(lambda_surface)))
 
-  SENS_DATASET <<- dataset
-  SENS_MODEL <<- model_name
-
   if (RUN_PARALLEL) {
     set_parallel_plan(TRUE)
 
-    out <- run_step_parallel(
-      dataset = jobs,
-      step_fun = evaluate_lambda_pair,
-      save_foldername = file.path(
-        "data",
-        "cache",
-        "sensitivity",
-        FREQ_TAG,
-        model_name
+    out <- tryCatch(
+      run_step_parallel(
+        dataset = jobs,
+        step_fun = evaluate_lambda_pair,
+        sensitivity_dataset = dataset,
+        model_name = model_name,
+        save_foldername = file.path(
+          "data",
+          "cache",
+          "sensitivity",
+          FREQ_TAG,
+          model_name
+        ),
+        step_name = paste0("lambda_", FREQ_TAG, "_", model_name)
       ),
-      step_name = paste0("lambda_", FREQ_TAG, "_", model_name)
+      finally = set_parallel_plan(FALSE)
     )
 
-    future::plan(future::sequential)
     result <- dplyr::bind_rows(out)
   } else {
-    result <- purrr::map_dfr(jobs, evaluate_lambda_pair)
+    result <- purrr::map_dfr(
+      jobs,
+      evaluate_lambda_pair,
+      sensitivity_dataset = dataset,
+      model_name = model_name
+    )
   }
 
-  rm(SENS_DATASET, SENS_MODEL, envir = .GlobalEnv)
   gc()
 
   result

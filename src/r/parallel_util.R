@@ -13,9 +13,28 @@
 
 autodetect_num_workers <- function() {
   available <- parallel::detectCores()
-  if (is.na(available)) available <- 1L
-  
-  as.integer(max(1L, min(available - 1L, MAX_WORKERS)))
+
+  if (length(available) != 1L ||
+      !is.numeric(available) ||
+      !is.finite(available) ||
+      available < 1L) {
+    available <- 1L
+  }
+
+  max_workers <- get0(
+    "MAX_WORKERS",
+    ifnotfound = 16L,
+    inherits = TRUE
+  )
+
+  if (length(max_workers) != 1L ||
+      !is.numeric(max_workers) ||
+      !is.finite(max_workers) ||
+      max_workers < 1L) {
+    max_workers <- 16L
+  }
+
+  as.integer(max(1L, min(available - 1L, max_workers)))
 }
 
 

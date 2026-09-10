@@ -28,7 +28,7 @@ source("src/r/0_common_new.R")
 
 # Maximum size for globals passed to future workers.
 
-options(future.globals.maxSize = 4 * 1024^4)
+options(future.globals.maxSize = 4 * 1024^3)
 
 cat("Parameters:\n")
 cat("  periods           =", paste(periods, collapse = ", "), "\n")
@@ -109,8 +109,7 @@ set_parallel_plan(FALSE)
 
 # 07: Compute time-series features --------------------------------------------
 
-RUN_PARALLEL <- FALSE
-set_parallel_plan(RUN_PARALLEL)
+set_parallel_plan(FALSE)
 
 if (FORCE_RERUN || any(!file.exists(features_files))) {
   cat("\n[07] Computing tsfeatures...\n")
@@ -121,9 +120,6 @@ if (FORCE_RERUN || any(!file.exists(features_files))) {
 
 cleanup_step()
 set_parallel_plan(FALSE)
-
-RUN_PARALLEL <- TRUE
-
 
 # 08: Create split indices ----------------------------------------------------
 
@@ -164,8 +160,10 @@ cleanup_step()
 # 13: Evaluate DTW ------------------------------------------------------------
 
 cat("\n[13] Evaluating DTW baseline...\n")
+set_parallel_plan(RUN_PARALLEL)
 source("src/r/13_baseline_dtw_real.R")
 cleanup_step()
+set_parallel_plan(FALSE)
 
 # 15: Evaluate Euclidean distance ---------------------------------------------
 

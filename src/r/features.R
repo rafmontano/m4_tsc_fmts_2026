@@ -30,6 +30,34 @@ heterogeneity_tsfeat_workaround <- function(x) {
   output
 }
 
+entropy_tsfeat_workaround <- function(x) {
+  output <- c(entropy = 0)
+
+  series_sd <- stats::sd(
+    as.numeric(x),
+    na.rm = TRUE
+  )
+
+  if (length(x) < 2L ||
+      !is.finite(series_sd) ||
+      series_sd == 0) {
+    return(output)
+  }
+
+  value <- try(
+    tsfeatures::entropy(x),
+    silent = TRUE
+  )
+
+  if (!inherits(value, "try-error") &&
+      length(value) > 0L &&
+      is.finite(value[1L])) {
+    output[[1L]] <- as.numeric(value[1L])
+  }
+
+  output
+}
+
 hw_parameters_tsfeat_workaround <- function(x) {
   pars <- c(NA, NA, NA)
 
@@ -62,7 +90,7 @@ calc_features <- function(seriesentry) {
       "acf_features",
       "arch_stat",
       "crossing_points",
-      "entropy",
+      entropy_tsfeat_workaround,
       "flat_spots",
       heterogeneity_tsfeat_workaround,
       "holt_parameters",
@@ -151,7 +179,7 @@ calc_features_with_da <- function(seriesentry, period) {
       "acf_features",
       "arch_stat",
       "crossing_points",
-      "entropy",
+      entropy_tsfeat_workaround,
       "flat_spots",
       heterogeneity_tsfeat_workaround,
       "holt_parameters",

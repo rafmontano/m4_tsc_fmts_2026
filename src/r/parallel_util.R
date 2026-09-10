@@ -12,7 +12,7 @@
 
 autodetect_num_workers <- function() {
   n_workers <- max(1L, parallel::detectCores() - 1)
-  n_workers <- min(n_workers, 16L)
+  n_workers <- min(n_workers, 8L)
   as.integer(n_workers)
 }
 

@@ -19,8 +19,8 @@ periods <- c("Weekly", "Hourly", "Daily", "Yearly", "Quarterly", "Monthly")
 # Run controls ----------------------------------------------------------------
 
 RUN_PARALLEL <- TRUE
-FORCE_RERUN <-  TRUE
-RUN_CLEAN <- TRUE
+FORCE_RERUN <-  FALSE
+RUN_CLEAN <- FALSE
 USE_TEST_SUBSET <- FALSE
 TEST_SERIES_PER_PERIOD <- 10L
 

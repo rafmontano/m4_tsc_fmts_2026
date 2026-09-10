@@ -47,7 +47,7 @@ M4_FREQUENCY_INFO <- tibble::tribble(
 # Parallel execution ---------------------------------------------------------
 
 RUN_PARALLEL <- TRUE
-MAX_WORKERS <- 8L
+MAX_WORKERS <- 16L
 
 available_cores <- parallel::detectCores(logical = FALSE)
 

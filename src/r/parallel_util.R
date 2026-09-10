@@ -92,13 +92,21 @@ chunk_xapply <- function(
     }
 
     memofun <- whether_memoize(
-      function(call_id, chunk_id, my_apply_fun, ...) {
-        my_apply_fun(.chunk_dataset[start_ind:end_ind], ...)
+      function(call_id, chunk_start, chunk_end,
+               chunk_data, my_apply_fun, ...) {
+        my_apply_fun(chunk_data, ...)
       },
       cache = cache_obj
     )
-
-    chunk_result <- memofun(.idcall, start_ind, .apply_FUN, ...)
+    
+    chunk_result <- memofun(
+      call_id = .idcall,
+      chunk_start = start_ind,
+      chunk_end = end_ind,
+      chunk_data = .chunk_dataset[start_ind:end_ind],
+      my_apply_fun = .apply_FUN,
+      ...
+    )
     temp_dataset <- c(temp_dataset, chunk_result)
 
     rm(chunk_result)

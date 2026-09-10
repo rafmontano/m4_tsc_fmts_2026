@@ -189,16 +189,8 @@ for (period_i in periods) {
         dataset = seq_len(n_series),
         step_fun = create_series_windows,
         chunk_size = 250L,
-        save_foldername = file.path(
-          data_dir,
-          "tmp",
-          paste0(
-            "rolling_windows_",
-            TAG_i,
-            "_",
-            WINDOW_TAG_i
-          )
-        ),
+        save_foldername = file.path(data_dir, paste0("cache_windows_", 
+                                                     TAG_i, "_", WINDOW_TAG_i)),
         step_name = paste0(
           "rolling_windows_",
           TAG_i,

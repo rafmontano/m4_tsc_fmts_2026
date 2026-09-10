@@ -19,7 +19,7 @@ periods <- c("Weekly", "Hourly", "Daily", "Yearly", "Quarterly", "Monthly")
 # Run controls ----------------------------------------------------------------
 
 RUN_PARALLEL <- TRUE
-MAX_WORKERS <- 8L
+MAX_WORKERS <- 16L
 FORCE_RERUN <-  FALSE
 RUN_CLEAN <- FALSE
 USE_TEST_SUBSET <- FALSE

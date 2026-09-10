@@ -109,7 +109,8 @@ set_parallel_plan(FALSE)
 
 # 07: Compute time-series features --------------------------------------------
 
-set_parallel_plan(TRUE)
+RUN_PARALLEL <- FALSE
+set_parallel_plan(RUN_PARALLEL)
 
 if (FORCE_RERUN || any(!file.exists(features_files))) {
   cat("\n[07] Computing tsfeatures...\n")
@@ -120,6 +121,9 @@ if (FORCE_RERUN || any(!file.exists(features_files))) {
 
 cleanup_step()
 set_parallel_plan(FALSE)
+
+RUN_PARALLEL <- TRUE
+
 
 # 08: Create split indices ----------------------------------------------------
 

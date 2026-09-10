@@ -40,7 +40,7 @@ get_xgb_nthread <- function() {
   }
 
   if (sys == "linux") {
-    return(8L)
+    return(16L)
   }
 
   return(8L)

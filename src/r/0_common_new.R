@@ -19,6 +19,7 @@ periods <- c("Weekly", "Hourly", "Daily", "Yearly", "Quarterly", "Monthly")
 # Run controls ----------------------------------------------------------------
 
 RUN_PARALLEL <- TRUE
+MAX_WORKERS <- 8L
 FORCE_RERUN <-  FALSE
 RUN_CLEAN <- FALSE
 USE_TEST_SUBSET <- FALSE
@@ -211,6 +212,7 @@ cleanup_step <- function() {
     "label_from_z_int",
     "labeled_files",
     "make_empty_eval_summary_row",
+    "MAX_WORKERS",
     "minmax_vec",
     "models_dir",
     "models_xgb_dir",

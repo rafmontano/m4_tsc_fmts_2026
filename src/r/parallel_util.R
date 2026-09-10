@@ -10,11 +10,14 @@
 
 # Worker detection ------------------------------------------------------------
 
+
 autodetect_num_workers <- function() {
-  n_workers <- max(1L, parallel::detectCores() - 1)
-  n_workers <- min(n_workers, 8L)
-  as.integer(n_workers)
+  available <- parallel::detectCores()
+  if (is.na(available)) available <- 1L
+  
+  as.integer(max(1L, min(available - 1L, MAX_WORKERS)))
 }
+
 
 # Chunk sizing ----------------------------------------------------------------
 
@@ -153,9 +156,11 @@ run_step_parallel <- function(
 
 set_parallel_plan <- function(run_parallel) {
   if (run_parallel) {
-    n_workers <- max(1L, parallel::detectCores() - 1)
-    n_workers <- min(n_workers, 16L)
-    future::plan(future::multisession, workers = n_workers)
+    future::plan(
+      future::multisession,
+      workers = autodetect_num_workers()
+    )
+    message("Parallel workers: ", future::nbrOfWorkers())
   } else {
     future::plan(future::sequential)
   }

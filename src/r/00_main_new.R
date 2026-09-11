@@ -81,6 +81,7 @@ cleanup_step()
 
 # 04: Apply transformations ---------------------------------------------------
 
+MAX_WORKERS <- 8L
 set_parallel_plan(TRUE)
 
 if (FORCE_RERUN || any(!file.exists(windows_std_files))) {
@@ -92,6 +93,7 @@ if (FORCE_RERUN || any(!file.exists(windows_std_files))) {
 
 cleanup_step()
 set_parallel_plan(FALSE)
+
 
 # 06: Create directional labels -----------------------------------------------
 
@@ -110,6 +112,7 @@ set_parallel_plan(FALSE)
 # 07: Compute time-series features --------------------------------------------
 
 set_parallel_plan(FALSE)
+MAX_WORKERS <- 16L
 
 if (FORCE_RERUN || any(!file.exists(features_files))) {
   cat("\n[07] Computing tsfeatures...\n")

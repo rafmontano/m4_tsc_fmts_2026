@@ -13,4 +13,4 @@ dependencies:
       - rpy2==3.5.17
       - scikit-learn==1.7.2
       - sktime==0.40.1
-      - tensorflow==2.18.1
+      - tensorflow[and-cuda]==2.21.0

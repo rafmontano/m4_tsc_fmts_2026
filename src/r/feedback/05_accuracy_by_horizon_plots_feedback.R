@@ -147,7 +147,7 @@ read_one_eval_summary <- function(model_id, model, tag, frequency, window_mode) 
   path <- file.path(input_dir, model_id, sprintf("%s_eval_%s.rds", model_id, tag))
 
   if (!file.exists(path)) {
-    return(tibble())
+    stop("Missing required evaluation file: ", path)
   }
 
   obj <- safe_read_rds(path)
@@ -193,6 +193,40 @@ read_one_eval_summary <- function(model_id, model, tag, frequency, window_mode) 
     return(tibble())
   }
 
+  # Re-score saved predictions only; never modify the historical RDS summaries.
+  majority_path <- file.path(results_dir, "feedback", "majority",
+                            sprintf("majority_eval_%s.rds", tag))
+  reference <- readRDS(majority_path)[[window_mode]]$real$detail
+  detail <- obj[[effective_window_mode]]$real$detail
+  if (!length(reference) || length(detail) != length(reference) ||
+      nrow(summ) != length(reference) ||
+      !setequal(summ[[horizon_col]], seq_along(reference)) ||
+      anyDuplicated(summ[[horizon_col]])) stop("Incomplete horizon coverage: ", path)
+  original_accuracy <- summ$accuracy
+  label_changes <- integer(nrow(summ))
+  for (j in seq_len(nrow(summ))) {
+    h <- as.integer(summ[[horizon_col]][j])
+    ref <- reference[[h]]
+    saved <- detail[[h]]
+    pred <- as.integer(saved$pred_class)
+    truth <- as.integer(saved$y_true)
+    if (!is.null(saved$series_name)) {
+      order_idx <- match(ref$series_name, saved$series_name)
+      if (length(saved$series_name) != length(ref$series_name) ||
+          anyNA(order_idx) || anyDuplicated(order_idx)) stop("Series ID mismatch: ", path)
+      pred <- pred[order_idx]
+      truth <- truth[order_idx]
+    }
+    if (length(pred) != length(ref$y_true) || anyNA(pred) ||
+        any(!pred %in% c(0L, 1L)) ||
+        !(identical(truth, as.integer(ref$y_true)) ||
+          identical(truth, as.integer(ref$input_y_true)))) {
+      stop("Prediction/label alignment mismatch: ", path, " horizon ", h)
+    }
+    summ$accuracy[j] <- mean(pred == ref$y_true)
+    label_changes[j] <- sum(truth != ref$y_true)
+  }
+
   status_col <- if ("status" %in% names(summ)) "status" else NA_character_
 
   tibble(
@@ -204,6 +238,8 @@ read_one_eval_summary <- function(model_id, model, tag, frequency, window_mode) 
     model              = model,
     horizon            = as.integer(summ[[horizon_col]]),
     accuracy           = as.numeric(summ[["accuracy"]]),
+    original_accuracy  = as.numeric(original_accuracy),
+    evaluation_label_changes = label_changes,
     status             = if (!is.na(status_col)) as.character(summ[[status_col]]) else NA_character_,
     file               = path
   ) %>%
@@ -277,8 +313,8 @@ build_line_plot <- function(df_plot, frequency_i) {
       y = "Directional Accuracy"
     ) +
     guides(
-      colour = guide_legend(nrow = 2, byrow = TRUE),
-      linetype = guide_legend(nrow = 2, byrow = TRUE)
+      colour = guide_legend(nrow = 3, byrow = TRUE),
+      linetype = guide_legend(nrow = 3, byrow = TRUE)
     ) +
     theme_paper()
 
@@ -362,7 +398,6 @@ build_window_long_table <- function(window_mode) {
 }
 
 focused_y_limits <- c(0.40, 1.00)
-focused_y_breaks <- seq(0.40, 1.00, by = 0.10)
 
 build_focused_line_plot <- function(
   df_plot,
@@ -374,6 +409,9 @@ build_focused_line_plot <- function(
   df_plot <- df_plot %>%
     filter(model %in% models) %>%
     mutate(model = factor(model, levels = models))
+
+  y_limits <- focused_y_limits
+  y_limits[1] <- min(y_limits[1], floor(min(df_plot$accuracy) * 10) / 10)
 
   max_h <- max(df_plot$horizon, na.rm = TRUE)
 
@@ -397,9 +435,9 @@ build_focused_line_plot <- function(
     scale_x_continuous(breaks = x_breaks) +
     scale_y_continuous(
       labels = scales::number_format(accuracy = 0.01),
-      breaks = focused_y_breaks
+      breaks = seq(y_limits[1], y_limits[2], by = 0.10)
     ) +
-    coord_cartesian(ylim = focused_y_limits) +
+    coord_cartesian(ylim = y_limits) +
     scale_linetype_manual(values = linetypes) +
     labs(
       title = paste0(frequency_i, ": Directional Accuracy by Horizon"),
@@ -653,9 +691,17 @@ for (window_mode in window_modes) {
 
   df_long <- build_window_long_table(window_mode)
 
-  if (nrow(df_long) == 0L) {
-    warning("No usable evaluation rows found for window_mode=", window_mode, ". Skipping.")
-    next
+  expected_horizons <- c(Hourly = 48L, Daily = 14L, Weekly = 13L,
+                         Monthly = 18L, Quarterly = 8L, Yearly = 6L)
+  for (frequency_i in names(expected_horizons)) {
+    for (model_i in model_map$model_id) {
+      observed <- df_long$horizon[df_long$frequency == frequency_i &
+                                   df_long$model_id == model_i]
+      if (length(observed) != expected_horizons[[frequency_i]] ||
+          !setequal(observed, seq_len(expected_horizons[[frequency_i]]))) {
+        stop("Incomplete feedback comparison: ", frequency_i, " / ", model_i)
+      }
+    }
   }
 
   write_window_outputs(window_mode, df_long)

@@ -25,6 +25,12 @@ results_majority_dir <- file.path("results", "feedback", "majority")
 window_mode_i <- "default"
 window_tag_i <- "d"
 
+# Keep training labels unchanged, but evaluate every method against original M4.
+original_file <- file.path(input_dir, "M4_subset.rds")
+original_m4 <- readRDS(original_file)
+original_ids <- vapply(original_m4, function(s) as.character(s$st), character(1))
+stopifnot(!anyDuplicated(original_ids))
+
 # Fail before producing any outputs if required input files are absent.
 for (period_i in feedback_periods) {
   TAG_i <- freq_tag(period_i)
@@ -75,6 +81,15 @@ for (period_i in feedback_periods) {
   if (!H_i || any(lengths(train_labels) != H_i) ||
       any(lengths(baseline_df$labels) != H_i)) stop("Horizon mismatch for ", period_i)
 
+  original_idx <- match(baseline_df$series_name, original_ids)
+  if (length(original_idx) != nrow(baseline_df) || anyNA(original_idx) ||
+      anyDuplicated(original_idx)) stop("Original M4 series mismatch for ", period_i)
+  input_labels <- baseline_df$labels
+  baseline_df$labels <- lapply(original_m4[original_idx], function(s) {
+    as.integer(as.numeric(s$xx) > tail(as.numeric(s$x), 1))
+  })
+  stopifnot(all(lengths(baseline_df$labels) == H_i))
+
   cat("\n[12 feedback] Period =", period_i, "| training windows =", length(train_idx),
       "| evaluation series =", nrow(baseline_df), "| horizons =", H_i, "\n")
   summary_majority_rows <- vector("list", H_i)
@@ -109,7 +124,10 @@ for (period_i in feedback_periods) {
     res_majority$summary$eval_up_proportion <- mean(y_true == 1L)
     stopifnot(isTRUE(all.equal(res_majority$summary$accuracy, mean(y_true == majority_class))))
     summary_majority_rows[[h]] <- res_majority$summary
-    detail_majority[[h]] <- c(res_majority$detail, list(series_name = baseline_df$series_name))
+    detail_majority[[h]] <- c(res_majority$detail, list(
+      series_name = baseline_df$series_name,
+      input_y_true = vapply(input_labels, function(v) as.integer(v[h]), integer(1))
+    ))
 
     cat("[12 feedback] Horizon:", h, "| training Up:", round(train_up_proportion, 4),
         "| prediction:", majority_class, "| accuracy:", round(res_majority$summary$accuracy, 4), "\n")
@@ -126,7 +144,9 @@ for (period_i in feedback_periods) {
       evaluation_file = evaluation_file,
       split_name = if ("MANTIS" %in% names(split_index)) "MANTIS" else "uncap",
       weighting = "one vote per saved training window",
-      tie_rule = "non-increase (0)"
+      tie_rule = "non-increase (0)",
+      evaluation_definition = "original M4 future value > original last observation",
+      original_file = original_file
     )
   )
   save_consolidated_eval_object(majority_eval, majority_eval_i, window_mode_i)

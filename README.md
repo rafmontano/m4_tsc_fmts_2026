@@ -1,8 +1,14 @@
 # A Step in the Right Direction
 
-## Combining Point Forecasts with Foundation-Model Signals
+## Bridging Forecasting and Classification for Temporal Foundation Models
 
-Research code accompanying the FMTS \@ NeurIPS 2026 submission **A Step in the Right Direction: Combining Point Forecasts with Foundation-Model Signals**.
+Research code accompanying the FMTS \@ NeurIPS 2026 submission **A Step in the Right Direction: Bridging Forecasting and Classification for Temporal Foundation Models**.
+
+## Authors
+
+Rafael Montano, Pablo Montero-Manso, and Andrey Vasnev.
+
+The University of Sydney Business School.
 
 ![Directional Prediction Framework](docs/assets/directional-prediction-framework.png)
 
@@ -134,9 +140,9 @@ The repository contains source code, scripts, configuration, environment and pac
 
 ## Read the paper
 
-**A Step in the Right Direction: Combining Point Forecasts with Foundation-Model Signals**\
+**A Step in the Right Direction: Bridging Forecasting and Classification for Temporal Foundation Models**\
 Foundation Models for Temporal Systems (FMTS), NeurIPS 2026
 
 The [`paper/`](paper/) directory contains the manuscript source and build material. A compiled copy is available as [a-step-in-the-right-direction.pdf](paper/a-step-in-the-right-direction.pdf) for reading or download.
 
-Citation information is withheld during double-blind review.
+Citation information is available in [`CITATION.cff`](CITATION.cff).

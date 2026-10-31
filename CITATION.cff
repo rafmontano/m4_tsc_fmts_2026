@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the accompanying paper."
+type: software
+title: "A Step in the Right Direction: Bridging Forecasting and Classification for Temporal Foundation Models"
+authors:
+  - family-names: Montano
+    given-names: Rafael
+    affiliation: The University of Sydney Business School
+  - family-names: Montero-Manso
+    given-names: Pablo
+    affiliation: The University of Sydney Business School
+  - family-names: Vasnev
+    given-names: Andrey
+    affiliation: The University of Sydney Business School
+repository-code: "https://github.com/rafmontano/m4_tsc_fmts_2026"
+url: "https://github.com/rafmontano/m4_tsc_fmts_2026"
+license: MIT
+preferred-citation:
+  type: conference-paper
+  title: "A Step in the Right Direction: Bridging Forecasting and Classification for Temporal Foundation Models"
+  authors:
+    - family-names: Montano
+      given-names: Rafael
+      affiliation: The University of Sydney Business School
+    - family-names: Montero-Manso
+      given-names: Pablo
+      affiliation: The University of Sydney Business School
+    - family-names: Vasnev
+      given-names: Andrey
+      affiliation: The University of Sydney Business School
+  year: 2026
+  collection-title: "Foundation Models for Temporal Systems (FMTS), NeurIPS 2026"
+  url: "https://github.com/rafmontano/m4_tsc_fmts_2026"

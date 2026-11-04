@@ -136,13 +136,14 @@ The full experiment is computationally intensive. The script displays the active
 
 The repository covers the reproducibility path from environment creation and data preparation through model execution, evaluation, result generation, and paper compilation.
 
-The repository contains source code, scripts, configuration, environment and package definitions, and buildable paper sources. It does not version datasets, model weights, trained checkpoints, logs, caches, generated results, generated result figures, or compiled paper files.
+The repository contains source code, scripts, configuration, environment and package definitions, and buildable paper sources. It does not version datasets, model weights, trained checkpoints, logs, caches, generated results, or generated result figures.
 
-## Read the paper
+## Paper and poster
 
 **A Step in the Right Direction: Bridging Forecasting and Classification for Temporal Foundation Models**\
 Foundation Models for Temporal Systems (FMTS), NeurIPS 2026
 
-The [`paper/`](paper/) directory contains the manuscript source and build material. A compiled copy is available as [a-step-in-the-right-direction.pdf](paper/a-step-in-the-right-direction.pdf) for reading or download.
+- [Camera-ready paper (PDF)](paper/a-step-in-the-right-direction.pdf)
+- [Workshop poster (PDF)](paper/a-step-in-the-right-direction-poster.pdf)
 
 Citation information is available in [`CITATION.cff`](CITATION.cff).

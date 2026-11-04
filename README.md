@@ -143,7 +143,9 @@ The repository contains source code, scripts, configuration, environment and pac
 **A Step in the Right Direction: Bridging Forecasting and Classification for Temporal Foundation Models**\
 Foundation Models for Temporal Systems (FMTS), NeurIPS 2026
 
-- [Camera-ready paper (PDF)](paper/a-step-in-the-right-direction.pdf)
+- [A Step in the Right Direction](paper/a-step-in-the-right-direction.pdf)
 - [Workshop poster (PDF)](paper/a-step-in-the-right-direction-poster.pdf)
+
+[![Workshop poster preview](paper/a-step-in-the-right-direction-poster.png)](paper/a-step-in-the-right-direction-poster.pdf)
 
 Citation information is available in [`CITATION.cff`](CITATION.cff).

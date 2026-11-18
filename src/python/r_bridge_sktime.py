@@ -199,8 +199,9 @@ def get_model_split(
     split_index: Dict[str, Any],
     model_id: str,
 ) -> Dict[str, np.ndarray]:
-    if model_id in split_index:
-        split_use = split_index[model_id]
+    split_key = str(model_id).strip().lower()
+    if split_key in split_index:
+        split_use = split_index[split_key]
     else:
         split_use = split_index["uncap"]
 

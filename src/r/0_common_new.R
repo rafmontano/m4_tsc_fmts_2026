@@ -165,7 +165,7 @@ euclidean_eval_files <- file.path(
 CAP_POLICY <- list(
   xgboost       = NULL,
   euclidean     = NULL,
-  rocket        = NULL,
+  rocket        = 100000,
   rotf          = NULL,
   inceptiontime = 200000,
   dtw           = 10000,

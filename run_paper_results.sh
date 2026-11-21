@@ -27,6 +27,15 @@
 
 set -euo pipefail
 
+FROM_STEP2=false
+if [[ $# -gt 0 ]]; then
+  if [[ $# -ne 1 || "$1" != "--from-step2" ]]; then
+    echo "Usage: $0 [--from-step2]" >&2
+    exit 2
+  fi
+  FROM_STEP2=true
+fi
+
 # ------------------------------------------------------------------------------
 # Project root
 # ------------------------------------------------------------------------------
@@ -39,7 +48,11 @@ mkdir -p results
 # Runtime logging
 # ------------------------------------------------------------------------------
 
-TIMING_FILE="results/runtime_$(date -u +%Y%m%dT%H%M%SZ).tsv"
+if $FROM_STEP2; then
+  TIMING_FILE="results/runtime_from_step2_$(date -u +%Y%m%dT%H%M%SZ).tsv"
+else
+  TIMING_FILE="results/runtime_$(date -u +%Y%m%dT%H%M%SZ).tsv"
+fi
 TOTAL_START=$SECONDS
 
 printf "phase\tseconds\n" > "$TIMING_FILE"
@@ -160,7 +173,7 @@ run_conda_python_module() {
 }
 
 # ------------------------------------------------------------------------------
-# CUDA pre-flight checks
+# GPU pre-flight checks (CUDA or Apple Metal/MPS)
 # ------------------------------------------------------------------------------
 
 check_tensorflow_gpu() {
@@ -238,13 +251,15 @@ print("PyTorch:", torch.__version__)
 print("CUDA available:", torch.cuda.is_available())
 print("PyTorch CUDA:", torch.version.cuda)
 
-if not torch.cuda.is_available():
+if torch.cuda.is_available():
+    print("GPU: CUDA", torch.cuda.get_device_name(0))
+elif torch.backends.mps.is_available():
+    print("GPU: MPS")
+else:
     raise RuntimeError(
         "PyTorch cannot access a GPU. "
         "Aborting before foundation-model experiments."
     )
-
-print("GPU:", torch.cuda.get_device_name(0))
 '
   else
     env \
@@ -259,13 +274,15 @@ print("PyTorch:", torch.__version__)
 print("CUDA available:", torch.cuda.is_available())
 print("PyTorch CUDA:", torch.version.cuda)
 
-if not torch.cuda.is_available():
+if torch.cuda.is_available():
+    print("GPU: CUDA", torch.cuda.get_device_name(0))
+elif torch.backends.mps.is_available():
+    print("GPU: MPS")
+else:
     raise RuntimeError(
         "PyTorch cannot access a GPU. "
         "Aborting before foundation-model experiments."
     )
-
-print("GPU:", torch.cuda.get_device_name(0))
 '
   fi
 
@@ -280,8 +297,10 @@ print("GPU:", torch.cuda.get_device_name(0))
 # Step 1: R pipeline
 # ------------------------------------------------------------------------------
 
-run_phase "[1/6] R pipeline" \
-  Rscript src/r/00_main_new.R
+if ! $FROM_STEP2; then
+  run_phase "[1/6] R pipeline" \
+    Rscript src/r/00_main_new.R
+fi
 
 # ------------------------------------------------------------------------------
 # Step 2: Python classifiers

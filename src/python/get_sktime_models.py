@@ -8,7 +8,7 @@
 # Outputs:
 #   A dictionary containing the requested initialised models.
 # Used by:
-#   The conventional-classifier and Chronos experiment runners.
+#   The conventional-classifier experiment runner.
 # ==============================================================================
 
 from __future__ import annotations
@@ -24,7 +24,6 @@ def get_available_model_ids() -> List[str]:
         "ROCKET",
         "InceptionTime",
         "HIVECOTEV2",
-        "CHRONOS",
     ]
 
 
@@ -134,41 +133,12 @@ def _build_registry() -> Dict[str, Callable[..., object]]:
             verbose=0,
         )
 
-    def make_chronos(
-        *,
-        random_state: int,
-        device_map: str = None,
-        **_,
-    ):
-        import torch
-        from sktime.forecasting.chronos import ChronosForecaster
-
-        if device_map is None:
-            if torch.cuda.is_available():
-                device_map = "cuda"
-            elif torch.backends.mps.is_available():
-                device_map = "mps"
-            else:
-                device_map = "cpu"
-
-        dtype = torch.bfloat16 if device_map in ["cuda", "mps"] else torch.float32
-
-        return ChronosForecaster(
-            model_path="amazon/chronos-t5-large",
-            config={
-                "device_map": device_map,
-                "dtype": dtype,
-            },
-            seed=int(random_state),
-        )
-
     registry["DTW"] = make_dtw
     registry["EUCLIDEAN"] = make_euclidean
     registry["RotF"] = make_rotf
     registry["ROCKET"] = make_rocket
     registry["InceptionTime"] = make_inception
     registry["HIVECOTEV2"] = make_hivecote
-    registry["CHRONOS"] = make_chronos
 
     return registry
 
@@ -185,7 +155,6 @@ def get_sktime_models(
     inception_epochs: int = 10,
     inception_batch_size: int = 64,
     hivecote_time_limit_minutes: float = 1.0,
-    device_map: str = "cpu",
 ) -> Dict[str, object]:
     registry = _build_registry()
     available = get_available_model_ids()
@@ -216,7 +185,6 @@ def get_sktime_models(
                 inception_epochs=inception_epochs,
                 inception_batch_size=inception_batch_size,
                 hivecote_time_limit_minutes=hivecote_time_limit_minutes,
-                device_map=device_map,
             )
         except Exception as error:
             raise RuntimeError(

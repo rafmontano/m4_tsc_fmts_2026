@@ -132,6 +132,10 @@ The script runs six phases in sequence:
 
 The full experiment is computationally intensive. The script displays the active phase and records the duration of each phase and the complete pipeline in `results/runtime_<timestamp>.tsv`. Generated data, fitted models, results, and runtime records remain local and are excluded from version control.
 
+After phase 1 has completed successfully, use `./run_paper_results.sh --from-step2` to run phases 2–6 only. The existing `run_paper_results_from_step2.sh` delegates to this same pipeline, including its GPU checks; skipped phase 1 is not recorded as completed. Resume timings are saved in `results/runtime_from_step2_<timestamp>.tsv`.
+
+PyTorch GPU checks accept CUDA or Apple MPS; TensorFlow uses CUDA or Apple Metal. Both launch modes use `amazon/chronos-2` through `src.python.run_tsc_chronos2`. The obsolete Chronos-T5 runner has been removed.
+
 ## Reproducibility scope
 
 The repository covers the reproducibility path from environment creation and data preparation through model execution, evaluation, result generation, and paper compilation.

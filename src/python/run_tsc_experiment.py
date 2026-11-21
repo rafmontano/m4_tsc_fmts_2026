@@ -15,6 +15,7 @@ import os
 import warnings
 from typing import Any
 
+from joblib import parallel_config
 from threadpoolctl import threadpool_limits
 
 from src.python.eval_reports import (
@@ -78,6 +79,7 @@ N_JOBS = 8
 
 ROCKET_N_JOBS = 28
 ROCKET_BLAS_THREADS = 28
+ROTF_N_JOBS = 28
 ROCKET_NUM_KERNELS = 10000
 INCEPTION_EPOCHS = 150
 INCEPTION_BATCH_SIZE = 32
@@ -157,7 +159,7 @@ def run_one_frequency(
 
     models = get_sktime_models(
         model_id=model_id,
-        n_jobs=ROCKET_N_JOBS if model_key == "rocket" else N_JOBS,
+        n_jobs={"rocket": ROCKET_N_JOBS, "rotf": ROTF_N_JOBS}.get(model_key, N_JOBS),
         random_state=42,
         rocket_num_kernels=ROCKET_NUM_KERNELS,
         inception_epochs=INCEPTION_EPOCHS,
@@ -171,8 +173,12 @@ def run_one_frequency(
     print(f"[FIT] {name} | h={horizon_id}")
     print("-----------------------------------------------")
 
-    blas_threads = ROCKET_BLAS_THREADS if model_key == "rocket" else None
-    with threadpool_limits(limits=blas_threads, user_api="blas"):
+    blas_threads = {"rocket": ROCKET_BLAS_THREADS, "rotf": 1}.get(model_key)
+    parallel_settings = (
+        {"backend": "loky", "inner_max_num_threads": 1}
+        if model_key == "rotf" else {}
+    )
+    with threadpool_limits(limits=blas_threads, user_api="blas"), parallel_config(**parallel_settings):
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
 
@@ -205,7 +211,7 @@ def run_one_frequency(
         horizon_id=horizon_id,
     )
 
-    with threadpool_limits(limits=blas_threads, user_api="blas"):
+    with threadpool_limits(limits=blas_threads, user_api="blas"), parallel_config(**parallel_settings):
         y_real_pred = model.predict(X_real)
 
     res_real = compute_r_binary_eval(
@@ -239,6 +245,7 @@ def main():
     print(f"N_JOBS             : {N_JOBS}")
     print(f"ROCKET_N_JOBS      : {ROCKET_N_JOBS}")
     print(f"ROCKET_BLAS_THREADS: {ROCKET_BLAS_THREADS}")
+    print(f"ROTF_N_JOBS        : {ROTF_N_JOBS}")
     print(f"ROCKET_NUM_KERNELS : {ROCKET_NUM_KERNELS}")
     print(f"INCEPTION_EPOCHS   : {INCEPTION_EPOCHS}")
     print(f"INCEPTION_BATCH    : {INCEPTION_BATCH_SIZE}")

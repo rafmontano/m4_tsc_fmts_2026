@@ -21,6 +21,7 @@ import torch.nn.functional as F
 from mantis.architecture import Mantis8M
 from mantis.trainer import MantisTrainer
 from sklearn.ensemble import RandomForestClassifier
+from threadpoolctl import threadpool_limits
 
 
 DEFAULT_MANTIS_CHECKPOINT = "paris-noah/Mantis-8M"
@@ -187,7 +188,8 @@ def fit_mantis_rf(
         random_state=random_state,
         n_jobs=n_jobs,
     )
-    predictor.fit(Z_train, y_train)
+    with threadpool_limits(limits=1, user_api="blas"):
+        predictor.fit(Z_train, y_train)
 
     return {
         "trainer": trainer,
@@ -207,6 +209,7 @@ def predict_mantis_rf(
         trainer=trainer,
         resize_to=resize_to,
     )
-    y_pred = predictor.predict(Z)
+    with threadpool_limits(limits=1, user_api="blas"):
+        y_pred = predictor.predict(Z)
 
     return y_pred, Z

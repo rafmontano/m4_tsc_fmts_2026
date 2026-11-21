@@ -11,7 +11,10 @@
 #   Project root using the classifier Python environment.
 # ==============================================================================
 
+import argparse
 import os
+import subprocess
+import sys
 import warnings
 from typing import Any
 
@@ -234,7 +237,7 @@ def run_one_frequency(
     return containers
 
 
-def main():
+def main(cpu_model=None, frequency=None, selected_window=None):
     print("\n===============================================")
     print(" Running conventional classifier experiments")
     print("===============================================")
@@ -251,10 +254,13 @@ def main():
     print(f"INCEPTION_BATCH    : {INCEPTION_BATCH_SIZE}")
     print(f"Available models   : {get_available_model_ids()}")
 
-    model_ids = MODEL_ID if isinstance(MODEL_ID, list) else [MODEL_ID]
+    model_ids = (
+        [cpu_model] if cpu_model
+        else (MODEL_ID if isinstance(MODEL_ID, list) else [MODEL_ID])
+    )
 
-    for freq_tag in FREQ_TAGS:
-        for window_mode in WINDOW_MODES:
+    for freq_tag in ([frequency] if frequency else FREQ_TAGS):
+        for window_mode in ([selected_window] if selected_window else WINDOW_MODES):
             try:
                 n_horizons = _get_n_horizons(
                     freq_tag,
@@ -268,6 +274,36 @@ def main():
                 raise
 
             for model_id in model_ids:
+                # Accelerate and Numba read launch-time limits. Isolate CPU models
+                # so the parent and subsequent GPU models keep their environment.
+                if (
+                    sys.platform == "darwin"
+                    and model_id in ("ROCKET", "RotF")
+                    and cpu_model is None
+                ):
+                    env = os.environ.copy()
+                    env["VECLIB_MAXIMUM_THREADS"] = str(
+                        ROCKET_BLAS_THREADS if model_id == "ROCKET" else 1
+                    )
+                    if model_id == "ROCKET":
+                        env["NUMBA_NUM_THREADS"] = str(ROCKET_N_JOBS)
+                    print(
+                        f"[CPU LAUNCH] {model_id}: "
+                        f"VECLIB_MAXIMUM_THREADS={env['VECLIB_MAXIMUM_THREADS']} "
+                        f"NUMBA_NUM_THREADS={env.get('NUMBA_NUM_THREADS', 'unset')}",
+                        flush=True,
+                    )
+                    subprocess.run(
+                        [
+                            sys.executable, "-m", "src.python.run_tsc_experiment",
+                            "--cpu-model", model_id, "--frequency", freq_tag,
+                            "--window-mode", window_mode,
+                        ],
+                        env=env,
+                        check=True,
+                    )
+                    continue
+
                 containers = init_r_eval_containers(n_horizons)
 
                 for horizon_id in range(1, n_horizons + 1):
@@ -306,4 +342,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--cpu-model", choices=["ROCKET", "RotF"])
+    parser.add_argument("--frequency", choices=FREQ_TAGS)
+    parser.add_argument("--window-mode", choices=WINDOW_MODES)
+    args = parser.parse_args()
+    if args.cpu_model and not (args.frequency and args.window_mode):
+        parser.error("--cpu-model requires --frequency and --window-mode")
+    main(args.cpu_model, args.frequency, args.window_mode)

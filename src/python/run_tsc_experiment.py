@@ -15,6 +15,8 @@ import os
 import warnings
 from typing import Any
 
+from threadpoolctl import threadpool_limits
+
 from src.python.eval_reports import (
     build_r_consolidated_eval_object,
     compute_r_binary_eval,
@@ -74,6 +76,8 @@ WINDOW_MODES = ["default"]
 
 N_JOBS = 8
 
+ROCKET_N_JOBS = 28
+ROCKET_BLAS_THREADS = 28
 ROCKET_NUM_KERNELS = 10000
 INCEPTION_EPOCHS = 150
 INCEPTION_BATCH_SIZE = 32
@@ -153,7 +157,7 @@ def run_one_frequency(
 
     models = get_sktime_models(
         model_id=model_id,
-        n_jobs=N_JOBS,
+        n_jobs=ROCKET_N_JOBS if model_key == "rocket" else N_JOBS,
         random_state=42,
         rocket_num_kernels=ROCKET_NUM_KERNELS,
         inception_epochs=INCEPTION_EPOCHS,
@@ -167,8 +171,10 @@ def run_one_frequency(
     print(f"[FIT] {name} | h={horizon_id}")
     print("-----------------------------------------------")
 
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+    blas_threads = ROCKET_BLAS_THREADS if model_key == "rocket" else None
+    with threadpool_limits(limits=blas_threads, user_api="blas"):
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
 
     res_test = compute_r_binary_eval(
         y_true=y_test,
@@ -199,7 +205,8 @@ def run_one_frequency(
         horizon_id=horizon_id,
     )
 
-    y_real_pred = model.predict(X_real)
+    with threadpool_limits(limits=blas_threads, user_api="blas"):
+        y_real_pred = model.predict(X_real)
 
     res_real = compute_r_binary_eval(
         y_true=y_real,
@@ -230,6 +237,8 @@ def main():
     print(f"MODEL_ID           : {MODEL_ID}")
     print(f"WINDOW_MODES       : {WINDOW_MODES}")
     print(f"N_JOBS             : {N_JOBS}")
+    print(f"ROCKET_N_JOBS      : {ROCKET_N_JOBS}")
+    print(f"ROCKET_BLAS_THREADS: {ROCKET_BLAS_THREADS}")
     print(f"ROCKET_NUM_KERNELS : {ROCKET_NUM_KERNELS}")
     print(f"INCEPTION_EPOCHS   : {INCEPTION_EPOCHS}")
     print(f"INCEPTION_BATCH    : {INCEPTION_BATCH_SIZE}")

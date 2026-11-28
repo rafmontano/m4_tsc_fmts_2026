@@ -34,11 +34,6 @@ recommended_panels <- c(
   "Chronos-2-Mantis: W39"
 )
 
-recommended_panel_labels <- c(
-  "SMYL-Mantis: D1602" = "(a) Upward adjustment",
-  "Chronos-2-Mantis: W39" = "(b) Downward adjustment"
-)
-
 history_multiple <- 2L
 
 out_dir <- Sys.getenv(
@@ -50,6 +45,7 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 plot_series_levels <- c(
   "Observed data",
   "Base point forecast",
+  "No adjustment",
   "Upward adjusted point forecast",
   "Downward adjusted point forecast"
 )
@@ -57,6 +53,7 @@ plot_series_levels <- c(
 plot_colours <- c(
   "Observed data" = "#000000",
   "Base point forecast" = "#6F6F6F",
+  "No adjustment" = "#6F6F6F",
   "Upward adjusted point forecast" = "#009E73",
   "Downward adjusted point forecast" = "#D55E00"
 )
@@ -64,6 +61,7 @@ plot_colours <- c(
 plot_linetypes <- c(
   "Observed data" = "solid",
   "Base point forecast" = "dashed",
+  "No adjustment" = "solid",
   "Upward adjusted point forecast" = "solid",
   "Downward adjusted point forecast" = "solid"
 )
@@ -71,6 +69,7 @@ plot_linetypes <- c(
 plot_linewidths <- c(
   "Observed data" = 0.80,
   "Base point forecast" = 0.80,
+  "No adjustment" = 1.05,
   "Upward adjusted point forecast" = 1.05,
   "Downward adjusted point forecast" = 1.05
 )
@@ -78,6 +77,7 @@ plot_linewidths <- c(
 plot_shapes <- c(
   "Observed data" = NA,
   "Base point forecast" = 1,
+  "No adjustment" = 16,
   "Upward adjusted point forecast" = 16,
   "Downward adjusted point forecast" = 16
 )
@@ -85,6 +85,7 @@ plot_shapes <- c(
 plot_series_labels <- c(
   "Observed data" = "Observed",
   "Base point forecast" = "Original point forecast",
+  "No adjustment" = "No adjustment",
   "Upward adjusted point forecast" = "Upward adjustment",
   "Downward adjusted point forecast" = "Downward adjustment"
 )
@@ -288,7 +289,9 @@ build_case_data <- function(dataset,
     series = "Observed data"
   )
 
-  adjusted_series <- if (adjustment_result$adjustment == "up") {
+  adjusted_series <- if (all(adjusted_forecast == base_forecast)) {
+    "No adjustment"
+  } else if (adjustment_result$adjustment == "up") {
     "Upward adjusted point forecast"
   } else {
     "Downward adjusted point forecast"
@@ -354,6 +357,7 @@ build_case_data <- function(dataset,
         panel = factor(panel, levels = case_studies$panel_title),
         series = factor(series, levels = plot_series_levels)
       ),
+    adjustment_label = plot_series_labels[[adjusted_series]],
     summary = summary_df
   )
 }
@@ -498,6 +502,12 @@ case_data <- purrr::pmap(
 
 names(case_data) <- case_studies$panel_title
 
+recommended_panel_labels <- setNames(
+  paste0("(", letters[seq_along(recommended_panels)], ") ",
+         vapply(case_data[recommended_panels], `[[`, character(1), "adjustment_label")),
+  recommended_panels
+)
+
 case_summary <- bind_rows(lapply(case_data, `[[`, "summary"))
 readr::write_csv(
   case_summary,
@@ -514,11 +524,7 @@ for (i in seq_len(nrow(case_studies))) {
 
   panel_plot <- plot_one_case(
     case_data = panel_data,
-    panel_title = if (case_row$expected_adjustment == "up") {
-      "Upward adjustment"
-    } else {
-      "Downward adjustment"
-    }
+    panel_title = panel_data$adjustment_label
   )
 
   filename_stem <- paste(

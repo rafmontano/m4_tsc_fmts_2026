@@ -82,7 +82,7 @@ cleanup_step()
 # 04: Apply transformations ---------------------------------------------------
 
 MAX_WORKERS <- 8L
-set_parallel_plan(TRUE)
+set_parallel_plan(RUN_PARALLEL)
 
 if (FORCE_RERUN || any(!file.exists(windows_std_files))) {
   cat("\n[04] Applying transformations...\n")
@@ -97,7 +97,7 @@ set_parallel_plan(FALSE)
 
 # 06: Create directional labels -----------------------------------------------
 
-set_parallel_plan(TRUE)
+set_parallel_plan(RUN_PARALLEL)
 
 if (FORCE_RERUN || any(!file.exists(labeled_files))) {
   cat("\n[06] Creating labels...\n")
@@ -147,7 +147,7 @@ cleanup_step()
 
 cat("\n[10] Evaluating XGBoost...\n")
 set_parallel_plan(FALSE)
-set_parallel_plan(TRUE)
+set_parallel_plan(RUN_PARALLEL)
 source("src/r/10a_build_real_eval_parallel.R")
 set_parallel_plan(FALSE)
 source("src/r/10b_eval_xgb2_from_real_rds.R")

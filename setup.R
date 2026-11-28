@@ -10,7 +10,7 @@
 
 # Configuration ---------------------------------------------------------------
 
-if (!file.exists("m4-tsc-fmts-2026.Rproj")) {
+if (!file.exists("m4_tsc_fmts_2026.Rproj")) {
   message("Run setup.R from the repository root.")
 }
 
@@ -162,7 +162,7 @@ if (!requireNamespace("M4comp2018", quietly = TRUE)) {
   }
 
   if (!m4_downloaded) {
-    message("Could not download M4comp2018 after three attempts.")
+    stop("Could not download M4comp2018 after three attempts.")
   }
 
   renv::install(m4_tarball, prompt = FALSE)
@@ -171,11 +171,11 @@ if (!requireNamespace("M4comp2018", quietly = TRUE)) {
 
 if (!requireNamespace("scmamp", quietly = TRUE)) {
   message("[R] Installing scmamp from GitHub...")
-  renv::install("b0rxa/scmamp", prompt = FALSE)
+  renv::install("b0rxa/scmamp@3cf4d8b9759769cdf20771afa0efc33a5265c7f9", prompt = FALSE)
 }
 
-message("[R] Recording the installed R packages in renv.lock...")
-renv::snapshot(type = "implicit", prompt = FALSE)
+message("[R] Checking the installed R packages against renv.lock...")
+renv::status()
 
 complete_step(2L, "R environment is ready")
 
@@ -193,12 +193,12 @@ classifiers_file <- if (Sys.info()[["sysname"]] == "Darwin") {
 conda <- unname(Sys.which("conda"))
 
 if (!nzchar(conda)) {
-  message("Conda is required and must be available on PATH.")
+  stop("Conda is required and must be available on PATH.")
 }
 
 install_environment <- function(name, definition) {
   if (!file.exists(definition)) {
-    message("Missing environment file: ", definition)
+    stop("Missing environment file: ", definition)
   }
 
   exists <- name %in% reticulate::conda_list(conda = conda)$name
@@ -224,7 +224,7 @@ install_environment <- function(name, definition) {
   status <- system2(conda, arguments)
 
   if (!identical(status, 0L)) {
-    message("Could not install Conda environment: ", name)
+    stop("Could not install Conda environment: ", name)
   }
 }
 
@@ -247,7 +247,7 @@ check_python <- function(environment, code) {
   )
 
   if (!identical(status, 0L)) {
-    message("Python check failed: ", environment)
+    stop("Python check failed: ", environment)
   }
 }
 

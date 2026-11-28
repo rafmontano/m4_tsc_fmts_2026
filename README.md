@@ -81,7 +81,14 @@ Figure 3 illustrates how a learned directional signal complements an existing po
 
 ## Installation
 
-The project requires R, Conda, Git, and an internet connection for the initial package and model downloads. Run all commands from a terminal. The environment definitions support macOS on Apple silicon and Ubuntu 24.04.
+The project requires R, Conda, Git, and an internet connection for the initial package and model downloads. The published lockfile records R 4.6.2 and includes a package requiring R 4.5 or later. Run all commands from a terminal.
+
+The reference configuration is Ubuntu 24.04 with an AMD CPU (16 cores / 32 threads), 128 GB RAM, and an NVIDIA RTX 5090 with CUDA. The second target is Apple-silicon macOS with 128 GB unified memory. On macOS, PyTorch uses MPS and TensorFlow uses the tensorflow-metal plugin for Metal acceleration.
+
+Before running setup, install the native build prerequisites:
+
+- Ubuntu: install `libuv1-dev` and `libx11-dev` for the R package dependencies.
+- macOS: provide a Fortran compiler compatible with the installed R build and ensure that OpenSSL is discoverable by `pkg-config`. If necessary, set `PKG_CONFIG_PATH` to include the OpenSSL installation's `lib/pkgconfig` directory.
 
 Clone the repository and run the single setup script:
 
@@ -130,17 +137,33 @@ The script runs six phases in sequence:
 5.  Sensitivity analysis.
 6.  Paper tables and figures.
 
+Keep these phases sequential; parallelism is within stages. The existing R worker caps are:
+
+| Stage | Worker cap |
+|-------|------------|
+| Transformations and directional labels | 8 R workers |
+| Feature extraction, REAL evaluation preparation, DTW, and the lambda sensitivity grid | 16 R workers |
+| Chronos sensitivity forecasting | 1 R/Python GPU worker |
+
+CPU worker counts may be lower when fewer cores are available or parallel execution is disabled. The single Chronos worker avoids loading multiple model instances onto the same GPU. These are the existing caps, not changes to the scientific settings.
+
+The 16-worker caps above apply to the listed R stages, not to every Python
+model. The published Python settings use 28 jobs for ROCKET, Rotation Forest,
+and the Mantis random forest; ROCKET also permits 28 BLAS threads. These
+model-specific settings are unchanged. They are concurrency limits, not a
+guarantee that a run will fit the CPU or memory resources of every machine.
+
 The full experiment is computationally intensive. The script displays the active phase and records the duration of each phase and the complete pipeline in `results/runtime_<timestamp>.tsv`. Generated data, fitted models, results, and runtime records remain local and are excluded from version control.
 
-After phase 1 has completed successfully, use `./run_paper_results.sh --from-step2` to run phases 2–6 only. The existing `run_paper_results_from_step2.sh` delegates to this same pipeline, including its GPU checks; skipped phase 1 is not recorded as completed. Resume timings are saved in `results/runtime_from_step2_<timestamp>.tsv`.
+After phase 1 has completed successfully, use `./run_paper_results.sh --from-step2` to run phases 2–6 only. This option skips phase 1 and reruns phases 2–6. It assumes the phase 1 outputs are available. The existing `run_paper_results_from_step2.sh` delegates to this same pipeline, including its GPU checks; skipped phase 1 is not recorded as completed. Resume timings are saved in `results/runtime_from_step2_<timestamp>.tsv`.
 
 PyTorch GPU checks accept CUDA or Apple MPS; TensorFlow uses CUDA or Apple Metal. Both launch modes use `amazon/chronos-2` through `src.python.run_tsc_chronos2`. The obsolete Chronos-T5 runner has been removed.
 
 ## Reproducibility scope
 
-The repository covers the reproducibility path from environment creation and data preparation through model execution, evaluation, result generation, and paper compilation.
+The repository covers the reproducibility path from environment creation and data preparation through model execution, evaluation, and generation of tables and figures.
 
-The repository contains source code, scripts, configuration, environment and package definitions, and buildable paper sources. It does not version datasets, model weights, trained checkpoints, logs, caches, generated results, or generated result figures.
+The repository contains source code, scripts, configuration, environment and package definitions, and paper PDFs and poster assets. It does not version datasets, model weights, trained checkpoints, logs, caches, generated results, or generated result figures.
 
 ## Paper and poster
 

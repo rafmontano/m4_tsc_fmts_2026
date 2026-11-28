@@ -147,11 +147,10 @@ Keep these phases sequential; parallelism is within stages. The existing R worke
 
 CPU worker counts may be lower when fewer cores are available or parallel execution is disabled. The single Chronos worker avoids loading multiple model instances onto the same GPU. These are the existing caps, not changes to the scientific settings.
 
-The 16-worker caps above apply to the listed R stages, not to every Python
-model. The published Python settings use 28 jobs for ROCKET, Rotation Forest,
-and the Mantis random forest; ROCKET also permits 28 BLAS threads. These
-model-specific settings are unchanged. They are concurrency limits, not a
-guarantee that a run will fit the CPU or memory resources of every machine.
+The Python settings also cap ROCKET, Rotation Forest, and the Mantis random
+forest at 16 jobs; ROCKET's BLAS and Numba thread limits are also 16. These
+are concurrency limits, not a guarantee that a run will fit the CPU or memory
+resources of every machine.
 
 The full experiment is computationally intensive. The script displays the active phase and records the duration of each phase and the complete pipeline in `results/runtime_<timestamp>.tsv`. Generated data, fitted models, results, and runtime records remain local and are excluded from version control.
 
